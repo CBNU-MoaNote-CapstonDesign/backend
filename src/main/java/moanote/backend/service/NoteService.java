@@ -14,16 +14,10 @@ public class NoteService {
   @Autowired
   private NoteRepository noteRepository;
 
-    public Note createNote(Note note) {
-        return noteRepository.save(note);
-    }
   public Note createNote() {
     return noteRepository.createNote();
   }
 
-    public List<Note> getNotesByUserId(Long userId) {
-        return noteRepository.findByUserId(userId);
-    }
   /**
    * noteId 에 해당하는 Note 검색
    *
@@ -35,4 +29,19 @@ public class NoteService {
     return noteRepository.findById(noteId).orElseThrow();
   }
 
+  /**
+   * noteId 에 해당하는 Note 의 content 를 updatedContent 를 통해 업데이트합니다.
+   *
+   * @param noteId         업데이트할 Note 의 id
+   * @param updatedContent content 의 수정 사항
+   * @return 업데이트 대상이 된 Note entity
+   * @throws NoSuchElementException noteId 에 해당하는 객체를 찾을 수 없는 경우
+   */
+  public Note updateNote(Long noteId, String updatedContent) {
+    return noteRepository.updateNote(noteId, updatedContent);
+  }
+
+  public List<Note> getNotesByUserId(Long userId) {
+    return noteRepository.findByUserId(userId);
+  }
 }
