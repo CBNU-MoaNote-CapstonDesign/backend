@@ -14,8 +14,8 @@ public class NoteController {
     private NoteService noteService;
 
     @PostMapping("/create")
-    public Note createNote(@RequestBody Note note) {
-        return noteService.createNote(note);
+    public Note createNote() {
+        return noteService.createNote();
     }
 
     @GetMapping("/user/{userId}")

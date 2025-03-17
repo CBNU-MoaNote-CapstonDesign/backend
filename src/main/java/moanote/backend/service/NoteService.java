@@ -15,6 +15,9 @@ public class NoteService {
     public Note createNote(Note note) {
         return noteRepository.save(note);
     }
+  public Note createNote() {
+    return noteRepository.createNote();
+  }
 
     public List<Note> getNotesByUserId(Long userId) {
         return noteRepository.findByUserId(userId);
