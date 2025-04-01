@@ -5,16 +5,16 @@ import lombok.Getter;
 import java.util.Optional;
 
 /**
- * LWWRegister 은 Last-Write-Wins Register 의 약자로, 가장 최근에 업데이트된 값을 가지는 레지스터를 의미한다.
- * State-based CRDT 중 하나이다.
+ * LWWRegister 은 Last-Write-Wins Register 의 약자로, 가장 최근에 업데이트된 값을 가지는 레지스터를 의미한다. State-based CRDT 중
+ * 하나이다.
+ *
  * @param <T> 동기화 할 데이터 타입. Record 이어야 한다.
  */
 @Getter
 public class LWWRegister<T extends Record> {
 
   /**
-   * stateId 는 timeStamp 가 같을 때, 두 레지스터의 값을 비교할 때 사용된다.
-   * Tie-breaker 로 사용된다.
+   * stateId 는 timeStamp 가 같을 때, 두 레지스터의 값을 비교할 때 사용된다. Tie-breaker 로 사용된다.
    */
   private String stateId;
 
@@ -39,23 +39,23 @@ public class LWWRegister<T extends Record> {
   }
 
   /**
-   * 다른 레지스터와 병합한다.
+   * 다른 레지스터와 병합한다. Thread-Safe 하게 동작한다.
+   *
    * @param other 병합할 레지스터
-   * @return 다른 레지스터가 더 최신이면 true, 아니면 false
    */
-  public boolean merge(LWWRegister<T> other) {
+  public void merge(LWWRegister<T> other) {
     String othersStateId = other.getStateId();
     int othersTimeStamp = other.getTimeStamp();
     T othersValue = other.getValue().orElse(null);
 
-    if (othersTimeStamp > this.timeStamp || (othersTimeStamp == this.timeStamp
-        && othersStateId.compareTo(this.stateId) > 0)) {
-      this.stateId = othersStateId;
-      this.timeStamp = othersTimeStamp;
-      this.value = othersValue;
-      return true;
+    synchronized (this) {
+      if (othersTimeStamp > this.timeStamp || (othersTimeStamp == this.timeStamp
+          && othersStateId.compareTo(this.stateId) > 0)) {
+        this.stateId = othersStateId;
+        this.timeStamp = othersTimeStamp;
+        this.value = othersValue;
+      }
     }
-    return false;
   }
 
   public Optional<T> getValue() {
