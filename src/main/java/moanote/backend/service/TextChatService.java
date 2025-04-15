@@ -47,7 +47,7 @@ public class TextChatService {
     String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
         .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     String chatId = UuidCreator.getTimeOrderedEpoch().toString();
-    return new UserChatMessageBroadcastDTO("chat", senderId, senderName, date, messageContent,
+    return new UserChatMessageBroadcastDTO(message.messageType(), senderId, senderName, date, messageContent,
         chatId);
   }
 }
