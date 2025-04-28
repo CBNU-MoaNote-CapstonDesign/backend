@@ -26,13 +26,13 @@ public class LWWRegister<T extends Record> {
   @Getter(AccessLevel.NONE)
   private T value;
 
-  LWWRegister(String stateId, int timeStamp, T value) {
+  public LWWRegister(String stateId, int timeStamp, T value) {
     this.stateId = stateId;
     this.timeStamp = timeStamp;
     this.value = value;
   }
 
-  LWWRegister(String stateId) {
+  public LWWRegister(String stateId) {
     this.stateId = stateId;
     this.timeStamp = 0;
     this.value = null;
@@ -43,7 +43,7 @@ public class LWWRegister<T extends Record> {
    *
    * @param other 병합할 레지스터
    */
-  public void merge(LWWRegister<T> other) {
+  public boolean merge(LWWRegister<T> other) {
     String othersStateId = other.getStateId();
     int othersTimeStamp = other.getTimeStamp();
     T othersValue = other.getValue().orElse(null);
@@ -54,7 +54,9 @@ public class LWWRegister<T extends Record> {
         this.stateId = othersStateId;
         this.timeStamp = othersTimeStamp;
         this.value = othersValue;
+        return true;
       }
+      return false;
     }
   }
 

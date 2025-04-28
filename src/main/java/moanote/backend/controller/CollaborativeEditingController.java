@@ -43,7 +43,12 @@ public class CollaborativeEditingController {
       @DestinationVariable("docId") String docId) {
     System.out.println("Edited content received");
     // TODO@ (ACLService) ACL check here
-    // TODO@ (CollaborativeService) 서버의 문서를 동기화하는 로직을 추가해야 함
+
+    if (!UuidValidator.isValid(docId)) {
+      System.out.println("Doc ID not valid");
+      return null;
+    }
+    collaborativeEditingService.editNote(editedContent, UUID.fromString(docId));
     return editedContent;
   }
 
