@@ -3,9 +3,11 @@ package moanote.backend.service;
 import moanote.backend.domain.CollaborationSession;
 import moanote.backend.domain.CollaborationSession.Participation;
 import moanote.backend.domain.LWWNoteContent;
+import moanote.backend.domain.LWWRegister;
 import moanote.backend.dto.LWWStateDTO;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.UserData;
+import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,12 +28,15 @@ public class CollaborativeEditingService {
 
   final private NoteService noteService;
 
+  final private NoteRepository noteRepository;
+
   final private UserDataRepository userDataRepository;
 
   @Autowired
-  public CollaborativeEditingService(NoteService noteService,
+  public CollaborativeEditingService(NoteService noteService, NoteRepository noteRepository,
       UserDataRepository userDataRepository) {
     this.noteService = noteService;
+    this.noteRepository = noteRepository;
     this.collaborationSessions = new ConcurrentHashMap<>();
     this.userDataRepository = userDataRepository;
   }
@@ -104,5 +109,20 @@ public class CollaborativeEditingService {
     session.addParticipant(participant);
     collaborationSessions.put(sessionId, session);
     return session;
+  }
+
+  public void editNote(LWWStateDTO<LWWNoteContent> lwwStateDTO, UUID sessionId) {
+    CollaborationSession session = collaborationSessions.get(sessionId);
+    if (session == null) {
+      throw new IllegalArgumentException("Session not found");
+    }
+
+    if (!session.applyEdit(
+        new LWWRegister<>(lwwStateDTO.stateId(), lwwStateDTO.timeStamp(),
+            lwwStateDTO.value()))) {
+      return;
+    }
+
+    noteRepository.updateNote(session.noteId, lwwStateDTO.value().content());
   }
 }

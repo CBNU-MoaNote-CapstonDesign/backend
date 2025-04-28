@@ -43,9 +43,12 @@ public class CollaborationSession {
    */
   final private Map<UUID, Participation> participants;
 
+  final public UUID noteId;
+
   public CollaborationSession(Note note) {
     this.lwwRegister = new LWWRegister<>("init", 0, new LWWNoteContent(note.getContent()));
     participants = new ConcurrentHashMap<>();
+    noteId = note.getId();
   }
 
   /**
@@ -87,8 +90,8 @@ public class CollaborationSession {
   /**
    * 편집 사항을 적용하는 메소드입니다. LWWRegister 를 사용하여 편집 사항을 적용합니다.
    */
-  public void applyEdit(LWWRegister<LWWNoteContent> others) {
-    lwwRegister.merge(others);
+  public boolean applyEdit(LWWRegister<LWWNoteContent> others) {
+    return lwwRegister.merge(others);
   }
 
   public LWWStateDTO<LWWNoteContent> getLWWStateDTO() {
