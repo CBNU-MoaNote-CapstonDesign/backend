@@ -3,6 +3,7 @@ package moanote.backend.controller;
 
 import moanote.backend.dto.UserChatMessageBroadcastDTO;
 import moanote.backend.dto.UserChatSendDTO;
+import moanote.backend.service.ChatbotService;
 import moanote.backend.service.TextChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -14,10 +15,12 @@ import org.springframework.stereotype.Controller;
 public class TextChatController {
 
   private final TextChatService textChatService;
+  private final ChatbotService chatbotService;
 
   @Autowired
-  public TextChatController(TextChatService textChatService) {
+  public TextChatController(TextChatService textChatService, ChatbotService chatbotService) {
     this.textChatService = textChatService;
+    this.chatbotService = chatbotService;
   }
 
   /**
@@ -30,6 +33,9 @@ public class TextChatController {
   @SendTo("/topic/chat/channel/{channelId}")
   public UserChatMessageBroadcastDTO sendChatMessage(UserChatSendDTO body,
       @DestinationVariable("channelId") String channelId) {
+
+    chatbotService.handleBotRequest(channelId, body);
+
     System.out.println("Chatting in channel: " + channelId);
     return textChatService.receive(body);
   }
