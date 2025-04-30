@@ -5,6 +5,7 @@ import moanote.backend.entity.UserData;
 import moanote.backend.entity.NoteUserData;
 import moanote.backend.entity.NoteUserDataId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.UUID;
 
 public interface NoteUserDataRepository extends JpaRepository<NoteUserData, NoteUserDataId> {
 
@@ -16,4 +17,6 @@ public interface NoteUserDataRepository extends JpaRepository<NoteUserData, Note
     noteUserData.setPermission(permission);
     return save(noteUserData);
   }
+
+  void deleteAllByNoteId(UUID noteId);
 }

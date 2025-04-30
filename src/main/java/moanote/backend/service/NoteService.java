@@ -69,4 +69,33 @@ public class NoteService {
   public List<Note> getNotesByOwnerUserId(UUID userId) {
     return noteRepository.findNotesByOwner(userId);
   }
+
+  /**
+   * note와 연관된 note_user_data를 모두 삭제한 뒤 note를 삭제합니다.
+   * @param note 지울 note
+   * @return 성공시 true, 실패시 false
+   */
+  public boolean delete(Note note) {
+    try {
+      noteUserDataRepository.deleteAllByNoteId(note.getId());
+      //textChatMessageRepository.deleteAllByNoteId(note.getId());
+      noteRepository.delete(note);
+    } catch (Exception e) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * 전체 note 레코드를 지웁니다.
+   * @return 성공시 true, 실패시 false
+   */
+  public boolean deleteAll() {
+    try {
+      noteRepository.deleteAll();
+    } catch (Exception e) {
+      return false;
+    }
+    return true;
+  }
 }
