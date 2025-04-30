@@ -2,7 +2,12 @@ name: "Auto PR Description"
 
 on:
   pull_request:
-    types: [ opened, edited, reopened, synchronize ]
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR 번호 (수동 실행용)'
+        required: true
 
 permissions:
   pull-requests: write
@@ -21,33 +26,35 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // 가져온 커밋 메시지에서 type과 issue 추출
+            const inputPrNumber = context.payload.inputs?.pr_number;
+            const prNumber = inputPrNumber
+                ? parseInt(inputPrNumber)
+              : context.payload.pull_request.number;
+
             const commits = await github.paginate(
               github.rest.pulls.listCommits,
               {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: context.payload.pull_request.number
+                pull_number: prNumber
               }
             );
-            const validTypes = ['feat', 'fix', 'refactor', 'docs', 'chore'];
             const performed = new Set();
             const commitMessages = [];
             const issues = new Set();
 
-            console.log('[Commits found]\n' + commits);
+            console.log('[Commits found]\n' + commits.map(c => c.commit.message).join('\n'));
 
             commits.forEach(({ commit }) => {
               // 첫 줄만 사용
               const line = commit.message.split('\n')[0];
-              const pattern = /^(\w+)(?:\([^)]+\))?: (.+?) (#\d+)$/;
+              const pattern = /^(\w+)(?:\(([^)]+)\))?:\s(.+?)(?:\s(#\d+))?$/;
               const m = line.match(pattern);
               if (m) {
-                let [_, type, title, issue] = m;
-                if (!validTypes.includes(type)) type = 'chore';
+                let [, type, scope, title, issue] = m;
                 performed.add(type);
                 commitMessages.push({ type: type, title: title });
-                issues.add(issue);
+                if (issue) issues.add(issue);
               }
             });
 
@@ -71,9 +78,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const inputPrNumber = context.payload.inputs?.pr_number;
+            const prNumber = inputPrNumber
+                ? parseInt(inputPrNumber)
+              : context.payload.pull_request.number;
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              body: `${{ steps.generate_body.outputs.result }}`
+              pull_number: prNumber,
+              body: ${{ steps.generate_body.outputs.result }}
             });
