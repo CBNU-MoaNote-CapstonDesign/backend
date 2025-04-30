@@ -2,7 +2,7 @@ name: "Auto PR Description"
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened]
   workflow_dispatch:
     inputs:
       pr_number:
