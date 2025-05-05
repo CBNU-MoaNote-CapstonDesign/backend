@@ -37,10 +37,10 @@ public class TestController {
   @GetMapping("/initDB")
   public String initDB() {
     try {
-      users.add(userService.createUser("kim", "moanote1234"));
-      users.add(userService.createUser("sa", "moanote1234"));
-      users.add(userService.createUser("son", "moanote1234"));
-      users.add(userService.createUser("moa-bot-id", "moanote1234"));
+      users.add(userService.createUser("kim", "1234"));
+      users.add(userService.createUser("sa", "1234"));
+      users.add(userService.createUser("son", "1234"));
+      users.add(userService.createUser("moa-bot-id", "1234"));
 
       notes.add(noteService.createNote(users.get(0).getId()));
       notes.add(noteService.createNote(users.get(1).getId()));
