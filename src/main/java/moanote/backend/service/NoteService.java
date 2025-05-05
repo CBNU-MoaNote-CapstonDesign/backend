@@ -3,9 +3,11 @@ package moanote.backend.service;
 import jakarta.transaction.Transactional;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.NoteUserData.Permission;
+import moanote.backend.entity.UserData;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.NoteUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
