@@ -29,7 +29,6 @@ public class TestController {
 
   @Autowired
   private SecurityConfig securityConfig;
-
   private ArrayList<UserData> users = new ArrayList<>();
   private ArrayList<Note> notes = new ArrayList<>();
 
