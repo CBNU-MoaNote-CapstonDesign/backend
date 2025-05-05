@@ -2,7 +2,7 @@ name: "Auto PR Description"
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -36,24 +36,24 @@ jobs:
               {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: prNumber
+                pull_number: prNumber                
               }
             );
             const performed = new Set();
             const commitMessages = [];
             const issues = new Set();
 
-            console.log('[Commits found]\n' + commits.map(c => c.commit.message).join('\n'));
+            console.log('[Commits found]\n' + commits.map(c => c.commit.message + ' ' + c.sha).join('\n'));
 
-            commits.forEach(({ commit }) => {
-              // 첫 줄만 사용
+            commits.forEach(({ commit, sha }) => {
+              // 첫 줄만 사용              
               const line = commit.message.split('\n')[0];
               const pattern = /^(\w+)(?:\(([^)]+)\))?:\s(.+?)(?:\s(#\d+))?$/;
               const m = line.match(pattern);
               if (m) {
                 let [, type, scope, title, issue] = m;
                 performed.add(type);
-                commitMessages.push({ type: type, title: title });
+                commitMessages.push({ type: type, title: title, sha: sha });                
                 if (issue) issues.add(issue);
               }
             });
@@ -63,7 +63,7 @@ jobs:
               .map(type => {
                 const titles = commitMessages
                   .filter(msg => msg.type === type)
-                  .map(msg => `- ${msg.title}`);
+                  .map(msg => `- ${msg.title} ${msg.sha}`);
                 return `### ${type}\n${titles.join('\n')}`;
               })
               .join('\n');
