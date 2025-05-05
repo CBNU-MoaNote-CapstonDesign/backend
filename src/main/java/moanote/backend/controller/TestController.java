@@ -1,5 +1,6 @@
 package moanote.backend.controller;
 
+import moanote.backend.config.SecurityConfig;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.NoteUserDataRepository;
@@ -26,6 +27,9 @@ public class TestController {
   @Autowired
   private NoteUserDataRepository noteUserDataRepository;
 
+  @Autowired
+  private SecurityConfig securityConfig;
+
   private ArrayList<UserData> users = new ArrayList<>();
   private ArrayList<Note> notes = new ArrayList<>();
 
@@ -37,10 +41,12 @@ public class TestController {
   @GetMapping("/initDB")
   public String initDB() {
     try {
-      users.add(userService.createUser("kim", "1234"));
-      users.add(userService.createUser("sa", "1234"));
-      users.add(userService.createUser("son", "1234"));
-      users.add(userService.createUser("moa-bot-id", "1234"));
+      var s = securityConfig.passwordEncoder();
+      String password = s.encode("1234");
+      users.add(userService.createUser("kim", password));
+      users.add(userService.createUser("sa", password));
+      users.add(userService.createUser("son", password));
+      users.add(userService.createUser("moa-bot-id", password));
 
       notes.add(noteService.createNote(users.get(0).getId()));
       notes.add(noteService.createNote(users.get(1).getId()));
