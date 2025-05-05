@@ -14,7 +14,7 @@ import java.util.ArrayList;
  */
 
 @RestController
-@RequestMapping("/") // 엔드포인트 경로 정의
+@RequestMapping("/api/dev") // 엔드포인트 경로 정의
 public class TestController {
 
   @Autowired
