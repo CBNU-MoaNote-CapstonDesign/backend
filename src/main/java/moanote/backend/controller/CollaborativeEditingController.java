@@ -38,7 +38,7 @@ public class CollaborativeEditingController {
    * @param editedContent 문서 동기화를 위해 주고 받는 수정 사항
    */
   @MessageMapping("/docs/edit/{docId}")
-  @SendTo("/app/docs/{docId}")
+  @SendTo("/topic/docs/{docId}")
   public LWWStateDTO<LWWNoteContent> editingDocs(LWWStateDTO<LWWNoteContent> editedContent,
       @DestinationVariable("docId") String docId) {
     System.out.println("Edited content received");
@@ -59,7 +59,7 @@ public class CollaborativeEditingController {
    * @param docId                 문서 ID
    * @return LWWStateDTO<LWWNoteContent> 세션의 현재 LWWState 를 담고 있는 객체 DTO
    */
-  @SubscribeMapping("/docs/{docId}")
+  @SubscribeMapping("/docs/participate/{docId}")
   public LWWStateDTO<LWWNoteContent> participateSession(
       SimpMessageHeaderAccessor messageHeaderAccessor, @DestinationVariable("docId") String docId) {
     String participantUserId = messageHeaderAccessor.getFirstNativeHeader("participantUserId");
