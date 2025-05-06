@@ -23,6 +23,7 @@ public class NoteService {
 
   private final NoteUserDataRepository noteUserDataRepository;
 
+  @Autowired
   public NoteService(NoteRepository noteRepository, UserDataRepository userDataRepository,
       NoteUserDataRepository noteUserDataRepository) {
     this.noteRepository = noteRepository;
