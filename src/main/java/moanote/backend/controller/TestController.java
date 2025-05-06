@@ -35,7 +35,7 @@ public class TestController {
   /**
    * DB에 테스트 데이터 주입하는 기능
    *
-   * @return
+   * @return 결과 HTML
    */
   @GetMapping("/initDB")
   public String initDB() {

@@ -11,18 +11,11 @@ import org.springframework.stereotype.Controller;
 public class CollaborativeEditingController {
 
   /**
-   * <pre>
-   * body : LWWStateDTO<LWWNoteContent>
-   * {
-   *  "stateId":String
-   *  "timeStamp":Number,
-   *  "value":{
-   *      "content":String
-   *    }
-   *  }
-   *  </pre>
+   * 문서 수정 사항을 수신 및 전파하는 메소드
    *
    * @param editedContent 문서 동기화를 위해 주고 받는 수정 사항
+   * @param docId         문서 ID
+   * @return editedContent 와 동일한 Scheme 의 객체로, editedContent 와 서버의 LWWState 를 Merge 한 상태
    */
   @MessageMapping("/docs/edit/{docId}")
   @SendTo("/topic/docs/{docId}")
