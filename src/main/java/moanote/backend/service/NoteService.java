@@ -2,6 +2,7 @@ package moanote.backend.service;
 
 import jakarta.transaction.Transactional;
 import moanote.backend.entity.Note;
+import moanote.backend.entity.NoteUserData;
 import moanote.backend.entity.NoteUserData.Permission;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.NoteRepository;
@@ -44,6 +45,35 @@ public class NoteService {
         newNote,
         Permission.OWNER);
     return newNote;
+  }
+
+  /**
+   * 특정 Note 의 특정 User 가 가진 permission 을 생성, 혹은 이미 존재하는 경우 permission 을 업데이트합니다.
+   *
+   * @param noteId permission 을 부여할 Note 의 id
+   * @param userId permission 을 부여할 User 의 id
+   * @param permission 부여할 permission
+   * @return permission 을 부여한 Note entity
+   */
+  @Transactional
+  public Note grantPermission(UUID noteId, UUID userId, Permission permission) {
+    Note note = noteRepository.findById(noteId).orElseThrow();
+    UserData userData = userDataRepository.findById(userId).orElseThrow();
+    NoteUserData oldPermission = noteUserDataRepository
+        .findByNoteAndUser(note, userData)
+        .orElse(null);
+
+    if (oldPermission == null) {
+      noteUserDataRepository.createNoteUserData(userData, note, permission);
+      return note;
+    }
+
+    if (oldPermission.getPermission() == Permission.OWNER) {
+      throw new IllegalArgumentException("Cannot change permission of owner");
+    }
+    oldPermission.setPermission(permission);
+    noteUserDataRepository.save(oldPermission);
+    return note;
   }
 
   /**
