@@ -1,5 +1,6 @@
 package moanote.backend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,6 +19,9 @@ public class SecurityConfig {
 
   private final CustomUserDetailsService userDetailsService;
 
+  @Value("${frontend.url}")
+  private String frontendUrl;
+
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http
@@ -31,7 +35,7 @@ public class SecurityConfig {
         )
         .formLogin(form -> form
             .loginPage("/login") // 커스텀 로그인 페이지
-            .defaultSuccessUrl("/home", true)
+            .defaultSuccessUrl(frontendUrl, true)
             .permitAll()
         )
         .logout(logout -> logout

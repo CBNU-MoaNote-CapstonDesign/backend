@@ -1,6 +1,9 @@
 spring.application.name=backend
 server.port=스프링_서버_포트_번호_입력
 
+# FE url
+frontend.url=http://localhost:3000
+
 # 오픈 AI API 정보 설정
 openai.api.url=오픈_AI_API_요청_주소_입력
 openai.api.key=오픈_AI_API_키값_입력
