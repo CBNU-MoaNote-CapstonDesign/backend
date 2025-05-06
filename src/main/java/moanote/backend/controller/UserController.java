@@ -27,10 +27,6 @@ public class UserController {
     return userService.createUser(userData.get("username"), userData.get("password"));
   }
 
-  private boolean isLoggedIn(Authentication authentication) {
-    return authentication != null && authentication.getPrincipal() instanceof CustomUserDetails;
-  }
-
   /**
    * GET /api/users/me
    * 내 정보를 받아오는 API 입니다.
@@ -40,15 +36,13 @@ public class UserController {
    */
   @GetMapping("/me")
   public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-    if (!isLoggedIn(authentication))
+    UserDataDTO user = userService.getAuthenticationUser(authentication);
+
+    if (user == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("");
+    }
 
-    // authentication의 getPrincipal()에서 필요한 정보만 뽑아서 UserDataDTO로 저장
-    CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
-    UserDataDTO data = new UserDataDTO(user.getId(), user.getUsername());
-    System.out.println(user.getId());
-
-    return ResponseEntity.ok(data);
+    return ResponseEntity.ok(user);
   }
 
   @Autowired
@@ -63,11 +57,29 @@ public class UserController {
    * @return 유저가 있으면 UserDataDTO, 없으면 NOT_FOUND, 미로그인시 UNAUTHORIZED
    */
   @GetMapping("/{userId}")
-  public ResponseEntity<?> getUser(Authentication authentication, @PathVariable UUID userId) {
-    if (!isLoggedIn(authentication))
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("");
+  public ResponseEntity<?> getUserById(Authentication authentication, @PathVariable UUID userId) {
+    UserData user = userService.findById(userId).orElse(null);
 
-    UserData user = userDataRepository.findById(userId).orElse(null);
+    if (user == null) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+    }
+
+    UserDataDTO data = new UserDataDTO(user.getId(), user.getUsername());
+
+    return ResponseEntity.ok(data);
+  }
+
+  /**
+   * GET /api/users/find/{userName}
+   * 해당하는 name을 가진 유저 정보를 찾는 API 입니다.
+   *
+   * @param authentication 유저의 http-only 토큰이 Spring Security에 의해 자동 주입됨
+   * @param userName 정보를 찾고자 하는 유저의 ID
+   * @return 유저가 있으면 UserDataDTO, 없으면 NOT_FOUND, 미로그인시 UNAUTHORIZED
+   */
+  @GetMapping("/find/{userName}")
+  public ResponseEntity<?> getUserByUsername(Authentication authentication, @PathVariable String userName) {
+    UserData user = userService.findByUsername(userName);
 
     if (user == null) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");

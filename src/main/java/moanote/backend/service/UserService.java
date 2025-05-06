@@ -1,12 +1,17 @@
 package moanote.backend.service;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import moanote.backend.dto.UserDataDTO;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.NoteUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
+import moanote.backend.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
 import java.util.UUID;
@@ -89,5 +94,18 @@ public class UserService {
       return false;
     }
     return true;
+  }
+
+  private boolean isLoggedIn(Authentication authentication) {
+    return authentication != null && authentication.getPrincipal() instanceof CustomUserDetails;
+  }
+
+  public UserDataDTO getAuthenticationUser(Authentication authentication) {
+    if (!isLoggedIn(authentication))
+      return null;
+
+    // authentication의 getPrincipal()에서 필요한 정보만 뽑아서 UserDataDTO로 반환
+    CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+    return new UserDataDTO(user.getId(), user.getUsername());
   }
 }
