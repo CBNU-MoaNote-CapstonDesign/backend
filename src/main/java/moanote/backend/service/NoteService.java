@@ -115,6 +115,7 @@ public class NoteService {
 
   /**
    * note와 연관된 note_user_data를 모두 삭제한 뒤 note를 삭제합니다.
+   *
    * @param note 지울 note
    * @return 성공시 true, 실패시 false
    */
@@ -131,6 +132,7 @@ public class NoteService {
 
   /**
    * 전체 note 레코드를 지웁니다.
+   *
    * @return 성공시 true, 실패시 false
    */
   public boolean deleteAll() {
