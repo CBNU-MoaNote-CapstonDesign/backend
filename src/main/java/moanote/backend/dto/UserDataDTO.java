@@ -1,5 +1,7 @@
 package moanote.backend.dto;
 
+import java.util.UUID;
+
 /**
  * <pre>
  *   UserDataDTO
@@ -8,6 +10,6 @@ package moanote.backend.dto;
  * @param id
  * @param name
  */
-public record UserDataDTO(java.util.UUID id, String name) {
+public record UserDataDTO(UUID id, String name) {
 
 }
