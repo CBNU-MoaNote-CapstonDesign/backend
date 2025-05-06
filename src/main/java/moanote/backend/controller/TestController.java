@@ -2,6 +2,7 @@ package moanote.backend.controller;
 
 import moanote.backend.config.SecurityConfig;
 import moanote.backend.entity.Note;
+import moanote.backend.entity.NoteUserData;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.NoteUserDataRepository;
 import moanote.backend.service.NoteService;
@@ -45,15 +46,19 @@ public class TestController {
       users.add(userService.createUser("kim", password));
       users.add(userService.createUser("sa", password));
       users.add(userService.createUser("son", password));
+
+
+      for (int i = 0; i < users.size(); i++) {
+        notes.add(noteService.createNote(users.get(i).getId()));
+        noteService.updateNote(notes.get(i).getId(), "노트" + i);
+        for (int j = 0; j < users.size(); j++) {
+          if (i != j) {
+            noteService.grantPermission(notes.get(i).getId(), users.get(j).getId(), NoteUserData.Permission.valueOf("WRITE"));
+          }
+        }
+      }
+
       users.add(userService.createUser("moa-bot-id", password));
-
-      notes.add(noteService.createNote(users.get(0).getId()));
-      notes.add(noteService.createNote(users.get(1).getId()));
-      notes.add(noteService.createNote(users.get(2).getId()));
-
-      noteService.updateNote(notes.get(0).getId(), "노트1");
-      noteService.updateNote(notes.get(1).getId(), "노트2");
-      noteService.updateNote(notes.get(2).getId(), "노트3");
 
       return "<html><body><h1>테스트 데이터 주입 완료</h1></body></html>";
     } catch (Exception e) {
