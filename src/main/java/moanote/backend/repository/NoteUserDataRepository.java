@@ -5,6 +5,7 @@ import moanote.backend.entity.UserData;
 import moanote.backend.entity.NoteUserData;
 import moanote.backend.entity.NoteUserDataId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface NoteUserDataRepository extends JpaRepository<NoteUserData, NoteUserDataId> {
@@ -19,4 +20,6 @@ public interface NoteUserDataRepository extends JpaRepository<NoteUserData, Note
   }
 
   void deleteAllByNoteId(UUID noteId);
+
+  Optional<NoteUserData> findByNoteAndUser(Note note, UserData user);
 }
