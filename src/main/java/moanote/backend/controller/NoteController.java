@@ -21,6 +21,11 @@ public class NoteController {
   }
 
   @GetMapping("/user/{userId}")
+  public List<Note> getNotesByUser(@PathVariable UUID userId) {
+    return noteService.getNotesByUserId(userId);
+  }
+
+  @GetMapping("/user/{userId}/owner")
   public List<Note> getNotesByOwner(@PathVariable UUID userId) {
     return noteService.getNotesByOwnerUserId(userId);
   }

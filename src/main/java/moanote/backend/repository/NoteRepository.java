@@ -26,6 +26,14 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
       """)
   List<Note> findNotesByOwner(@Param("owner") UUID ownerUserId);
 
+  @Query(value = """
+      SELECT n
+      FROM Note n
+      JOIN NoteUserData nud ON n.id = nud.note.id
+      WHERE nud.user.id = :user
+      """)
+  List<Note> findNotesByUser(@Param("user") UUID ownerUserId);
+
   Optional<Note> findById(UUID noteId);
 
   default Note createNote() {

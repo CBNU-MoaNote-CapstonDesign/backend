@@ -104,6 +104,16 @@ public class NoteService {
   }
 
   /**
+   * userId 와 연관된 모든 note 를 가져옵니다.
+   *
+   * @param userId userId
+   * @return userId와 연관된 모든 note
+   */
+  public List<Note> getNotesByUserId(UUID userId) {
+    return noteRepository.findNotesByUser(userId);
+  }
+
+  /**
    * note와 연관된 note_user_data를 모두 삭제한 뒤 note를 삭제합니다.
    * @param note 지울 note
    * @return 성공시 true, 실패시 false
