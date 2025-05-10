@@ -44,7 +44,7 @@ jobs:
 
       - name: Fetch project and field IDs
         if: steps.check_user.outputs.is_member == 'true'
-        id: sprint_metadata
+        id: metadata
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
