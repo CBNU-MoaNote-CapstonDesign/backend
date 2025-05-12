@@ -34,7 +34,7 @@ public class TextChatController {
   public UserChatMessageBroadcastDTO sendChatMessage(UserChatSendDTO body,
       @DestinationVariable("channelId") String channelId) {
 
-    chatbotService.handleBotRequest(channelId, body);
+    chatbotService.handleUserBotRequest(channelId, body);
 
     System.out.println("Chatting in channel: " + channelId);
     return textChatService.receive(body);
