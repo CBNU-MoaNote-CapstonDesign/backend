@@ -3,7 +3,7 @@ server.port=스프링_서버_포트_번호_입력
 
 # AI agent 설정
 agent.api.url=localhost:8000
-agent.uuid=moa-bot-id
+agent.name=moa-bot-id
 # FE url
 frontend.url=http://localhost:3000
 
