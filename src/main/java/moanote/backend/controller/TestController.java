@@ -8,6 +8,7 @@ import moanote.backend.repository.NoteUserDataRepository;
 import moanote.backend.service.NoteService;
 import moanote.backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 
@@ -18,7 +19,6 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/dev") // 엔드포인트 경로 정의
 public class TestController {
-
   @Autowired
   NoteService noteService;
 
@@ -33,6 +33,11 @@ public class TestController {
   private ArrayList<UserData> users = new ArrayList<>();
   private ArrayList<Note> notes = new ArrayList<>();
 
+  private final String AGENT_NAME;
+
+  public TestController(@Value("${agent.name}") String AGENT_NAME) {
+    this.AGENT_NAME = AGENT_NAME;
+  }
   /**
    * DB에 테스트 데이터 주입하는 기능
    *
@@ -58,7 +63,7 @@ public class TestController {
         }
       }
 
-      users.add(userService.createUser("moa-bot-id", password));
+      users.add(userService.createUser(AGENT_NAME, password));
 
       return "<html><body><h1>테스트 데이터 주입 완료</h1></body></html>";
     } catch (Exception e) {
