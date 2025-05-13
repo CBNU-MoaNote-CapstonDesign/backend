@@ -85,7 +85,7 @@ public class ChatbotService {
                 .bodyValue(body)
                 .retrieve()
                 .toBodilessEntity()
-                .block();
+                .subscribe();
     }
 
     public UserChatMessageBroadcastDTO handleBuildChat(String channelId) {
