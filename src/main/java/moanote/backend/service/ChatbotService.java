@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Chatbot Agent와 채팅 간 연결하는 Service
@@ -26,32 +27,47 @@ public class ChatbotService {
 
   private final SimpMessagingTemplate messagingTemplate;
 
-  private final String AGENT_UUID;
+  private final UUID AGENT_UUID;
   private final String AGENT_NAME;
 
   private final String AGENT_API_URL;
   private final UserDataRepository userDataRepository;
+  private final UserService userService;
 
   public ChatbotService(SimpMessagingTemplate messagingTemplate,
       @Value("{agent.api.url}") String AGENT_API_URL,
-      @Value("{agent.name}") String AGENT_NAME, UserDataRepository userDataRepository) {
+      @Value("{agent.name}") String AGENT_NAME, UserDataRepository userDataRepository,
+      UserService userService) {
     this.messagingTemplate = messagingTemplate;
-    this.AGENT_NAME = AGENT_NAME;
-    this.AGENT_UUID = userDataRepository.findByUsername(AGENT_NAME).getId().toString();
-    this.AGENT_API_URL = AGENT_API_URL;
     this.userDataRepository = userDataRepository;
+    this.AGENT_API_URL = AGENT_API_URL;
+    this.userService = userService;
+
+    this.AGENT_NAME = AGENT_NAME;
+    UUID uuid;
+    try {
+      uuid = userDataRepository.findByUsername(AGENT_NAME).getId();
+    } catch (Exception e) {
+      UserData agent = buildAgent(AGENT_NAME);
+      uuid = agent.getId();
+    }
+    this.AGENT_UUID = uuid;
+  }
+
+  private UserData buildAgent(String name) {
+    return userService.createUser(name, "1234");
   }
 
   private UserChatMessageBroadcastDTO buildBroadcastMessage(String content) {
     String senderName = AGENT_NAME;
-    String senderId = AGENT_UUID;
+    UUID senderId = AGENT_UUID;
 
     String messageType = "bot";
     String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
         .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     String chatId = UuidCreator.getTimeOrderedEpoch().toString();
 
-    return new UserChatMessageBroadcastDTO(messageType, senderId, senderName, date, content,
+    return new UserChatMessageBroadcastDTO(messageType, senderId.toString(), senderName, date, content,
         chatId);
   }
 
