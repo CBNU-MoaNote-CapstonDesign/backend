@@ -21,76 +21,74 @@ import java.util.Map;
  */
 @Service
 public class ChatbotService {
-    private final WebClient webClient = WebClient.create();
 
-    private final SimpMessagingTemplate messagingTemplate;
+  private final WebClient webClient = WebClient.create();
 
-    private final String AGENT_NAME;
+  private final SimpMessagingTemplate messagingTemplate;
 
-    private final String AGENT_API_URL;
-    private final UserDataRepository userDataRepository;
+  private final String AGENT_UUID;
+  private final String AGENT_NAME;
 
-    public ChatbotService(SimpMessagingTemplate messagingTemplate,
-                          @Value("{agent.api.url}") String AGENT_API_URL,
-                          @Value("{agent.name}") String AGENT_NAME, UserDataRepository userDataRepository) {
-        this.messagingTemplate = messagingTemplate;
-        this.AGENT_NAME = AGENT_NAME;
-        this.AGENT_API_URL = AGENT_API_URL;
-        this.userDataRepository = userDataRepository;
+  private final String AGENT_API_URL;
+  private final UserDataRepository userDataRepository;
+
+  public ChatbotService(SimpMessagingTemplate messagingTemplate,
+      @Value("{agent.api.url}") String AGENT_API_URL,
+      @Value("{agent.name}") String AGENT_NAME, UserDataRepository userDataRepository) {
+    this.messagingTemplate = messagingTemplate;
+    this.AGENT_NAME = AGENT_NAME;
+    this.AGENT_UUID = userDataRepository.findByUsername(AGENT_NAME).getId().toString();
+    this.AGENT_API_URL = AGENT_API_URL;
+    this.userDataRepository = userDataRepository;
+  }
+
+  private UserChatMessageBroadcastDTO buildBroadcastMessage(String content) {
+    String senderName = AGENT_NAME;
+    String senderId = AGENT_UUID;
+
+    String messageType = "bot";
+    String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
+        .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    String chatId = UuidCreator.getTimeOrderedEpoch().toString();
+
+    return new UserChatMessageBroadcastDTO(messageType, senderId, senderName, date, content,
+        chatId);
+  }
+
+  private void broadcastMessage(String channelId, UserChatMessageBroadcastDTO message) {
+    System.out.println("다음에 보냅니다 : /topic/chat/channel/" + channelId);
+    messagingTemplate.convertAndSend("/topic/chat/channel/" + channelId, message);
+  }
+
+  public void handleEditChat(String channelId, UserChatMessageBroadcastDTO message) {
+    broadcastMessage(channelId, message);
+  }
+
+  @Async
+  public void handleBotRequest(String channelId, UserChatSendDTO userRequest) {
+    if (!userRequest.messageType().equals("request-bot")) {
+      return;
     }
 
-    private UserChatMessageBroadcastDTO buildBroadcastMessage(String content) {
-        String senderName = AGENT_NAME;
-        String senderId;
-        try {
-            UserData agent = userDataRepository.findByUsername(senderName);
-            senderId = agent.getId().toString();
-        } catch (Exception e) {
-            senderId = AGENT_NAME;
-        }
-        String messageType = "bot";
-        String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
-                .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        String chatId = UuidCreator.getTimeOrderedEpoch().toString();
+    String content = userRequest.messageContent();
 
-        return new UserChatMessageBroadcastDTO(messageType, senderId, senderName, date, content,
-                chatId);
-    }
+    // 1. python agent 호출 -> FastAPI 호출
+    Map<String, String> body = Map.of(
+        "channelId", channelId,
+        "content", content
+    );
 
-    private void broadcastMessage(String channelId, UserChatMessageBroadcastDTO message) {
-        System.out.println("다음에 보냅니다 : /topic/chat/channel/" + channelId);
-        messagingTemplate.convertAndSend("/topic/chat/channel/" + channelId, message);
-    }
+    webClient.post()
+        .uri(AGENT_API_URL + "/request")
+        .bodyValue(body)
+        .retrieve()
+        .toBodilessEntity()
+        .subscribe();
+  }
 
-    public void handleEditChat(String channelId, UserChatMessageBroadcastDTO message) {
-        broadcastMessage(channelId, message);
-    }
-
-    @Async
-    public void handleBotRequest(String channelId, UserChatSendDTO userRequest) {
-        if (!userRequest.messageType().equals("request-bot")) {
-            return;
-        }
-
-        String content = userRequest.messageContent();
-
-        // 1. python agent 호출 -> FastAPI 호출
-        Map<String, String> body = Map.of(
-                "channelId", channelId,
-                "content", content
-        );
-
-        webClient.post()
-                .uri(AGENT_API_URL + "/request")
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .subscribe();
-    }
-
-    public UserChatMessageBroadcastDTO handleBuildChat(String channelId) {
-        UserChatMessageBroadcastDTO message = buildBroadcastMessage("...");
-        broadcastMessage(channelId, message);
-        return message;
-    }
+  public UserChatMessageBroadcastDTO handleBuildChat(String channelId) {
+    UserChatMessageBroadcastDTO message = buildBroadcastMessage("...");
+    broadcastMessage(channelId, message);
+    return message;
+  }
 }
