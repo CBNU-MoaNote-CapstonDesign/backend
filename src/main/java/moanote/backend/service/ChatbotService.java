@@ -35,8 +35,8 @@ public class ChatbotService {
   private final UserService userService;
 
   public ChatbotService(SimpMessagingTemplate messagingTemplate,
-      @Value("{agent.api.url}") String AGENT_API_URL,
-      @Value("{agent.name}") String AGENT_NAME, UserDataRepository userDataRepository,
+      @Value("${agent.api.url}") String AGENT_API_URL,
+      @Value("${agent.name}") String AGENT_NAME, UserDataRepository userDataRepository,
       UserService userService) {
     this.messagingTemplate = messagingTemplate;
     this.userDataRepository = userDataRepository;
