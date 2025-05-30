@@ -2,6 +2,7 @@ package moanote.backend.controller;
 
 import com.github.f4b6a3.uuid.util.UuidValidator;
 import moanote.backend.domain.LWWNoteContent;
+import moanote.backend.dto.CRDTOperationDTO;
 import moanote.backend.dto.LWWStateDTO;
 import moanote.backend.service.CollaborativeEditingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -75,5 +77,13 @@ public class CollaborativeEditingController {
     return collaborativeEditingService.participateSession(
         UUID.fromString(participantUserId),
         UUID.fromString(docId));
+  }
+
+  @MessageMapping("/docs/tree/edit/{docId}")
+  @SendTo("/topic/docs/{docId}")
+  public List<CRDTOperationDTO> editingDocs(List<CRDTOperationDTO> editOperation,
+      @DestinationVariable("docId") String docId) {
+    System.out.println("Edit operation received: " + editOperation);
+    return editOperation;
   }
 }
