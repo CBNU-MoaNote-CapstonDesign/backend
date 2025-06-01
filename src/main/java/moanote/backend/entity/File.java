@@ -68,8 +68,10 @@ public class File {
   /**
    * 파일이 속한 디렉토리입니다.
    * This field is used to represent the parent directory of the file.
+   *
+   * 파일이 루트 디렉토리인 경우에만 null이 될 수 있습니다.
    */
   @ManyToOne
-  @JoinColumn(name = "directory_id", nullable = false)
+  @JoinColumn(name = "directory_id", nullable = true)
   private File directory;
 }

@@ -1,0 +1,218 @@
+package moanote.backend.service;
+
+import jakarta.transaction.Transactional;
+import moanote.backend.entity.File;
+import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.FileUserData;
+import moanote.backend.entity.UserData;
+import moanote.backend.repository.FileRepository;
+import moanote.backend.repository.FileUserDataRepository;
+import moanote.backend.repository.UserDataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Stack;
+import java.util.UUID;
+
+@Service
+public class FileService {
+
+  private final FileRepository fileRepository;
+
+  private final UserDataRepository userDataRepository;
+
+  private final FileUserDataRepository fileUserDataRepository;
+
+  @Autowired
+  public FileService(FileRepository fileRepository, UserDataRepository userDataRepository,
+      FileUserDataRepository fileUserDataRepository) {
+    this.fileRepository = fileRepository;
+    this.userDataRepository = userDataRepository;
+    this.fileUserDataRepository = fileUserDataRepository;
+  }
+
+  /**
+   * 새로운 file 을 생성하고, 생성 요청을 한 유저에게 파일에 대한 OWNER 권한을 부여합니다.
+   *
+   * @param creatorId 생성자 id
+   * @param filename  생성할 파일의 이름
+   * @param type      생성할 파일의 성격
+   * @param directory 생성된 파일이 위치할 디렉토리
+   * @return 생성된 File entity
+   */
+  @Transactional
+  public File createFile(UUID creatorId, String filename, FileType type, File directory) {
+    File newFile = fileRepository.createFile(filename, type, directory);
+    fileUserDataRepository.createFileUserData(userDataRepository.findById(creatorId).orElseThrow(),
+        newFile,
+        FileUserData.Permission.OWNER);
+    return newFile;
+  }
+
+  /**
+   * 새로운 file 을 생성하고, 생성 요청을 한 유저에게 파일에 대한 OWNER 권한을 부여합니다.
+   * 파일이 루트 디렉토리에 생성됩니다.
+   *
+   * @param creatorId 생성자 id
+   * @param filename  생성할 파일의 이름
+   * @param type      생성할 파일의 성격
+   * @return 생성된 File entity
+   */
+  @Transactional
+  public File createFile(UUID creatorId, String filename, FileType type) {
+    return createFile(creatorId, filename, type, fileRepository.getRootDirectory(creatorId));
+  }
+
+  /**
+   * createRootDirectory 는 유저의 루트 디렉토리를 생성합니다.
+   * 이미 루트 디렉토리가 존재하는 경우에는 아무 작업도 하지 않습니다.
+   *
+   * @param userId permission 을 삭제할 User 의 id
+    * @return 생성된 루트 디렉토리 File entity
+   */
+  public File createRootDirectory(UUID userId) {
+    try {
+      return fileRepository.getRootDirectory(userId);
+    } catch (NoSuchElementException e) {
+      // 루트 디렉토리가 존재하지 않는 경우에만 생성
+      File rootDirectory = fileRepository.createRootDirectory();
+      fileUserDataRepository.createFileUserData(userDataRepository.findById(userId).orElseThrow(),
+          rootDirectory,
+          FileUserData.Permission.OWNER);
+      return rootDirectory;
+    }
+  }
+
+  /**
+   * 특정 File 의 특정 User 가 가진 permission 을 생성, 혹은 이미 존재하는 경우 permission 을 업데이트합니다.
+   *
+   * @param fileId     permission 을 부여할 File 의 id
+   * @param userId     permission 을 부여할 User 의 id
+   * @param permission 부여할 permission
+   * @return permission 을 부여한 Note entity
+   */
+  @Transactional
+  public File grantPermission(UUID fileId, UUID userId, FileUserData.Permission permission) {
+    File file = fileRepository.findById(fileId).orElseThrow();
+    UserData userData = userDataRepository.findById(userId).orElseThrow();
+    FileUserData oldPermission = fileUserDataRepository
+        .findByFileAndUser(file, userData)
+        .orElse(null);
+
+    if (oldPermission == null) {
+      fileUserDataRepository.createFileUserData(userData, file, permission);
+      return file;
+    }
+
+    if (oldPermission.getPermission() == FileUserData.Permission.OWNER) {
+      throw new IllegalArgumentException("Cannot change permission of owner");
+    }
+    oldPermission.setPermission(permission);
+    fileUserDataRepository.save(oldPermission);
+    return file;
+  }
+
+  /**
+   * fileId 에 해당하는 File 검색
+   *
+   * @param fileId 찾을 File 의 id
+   * @return 찾아진 File entity 객체
+   * @throws NoSuchElementException fileId 에 해당하는 객체를 찾을 수 없는 경우
+   */
+  public File getNoteById(UUID fileId) {
+    return fileRepository.findById(fileId).orElseThrow();
+  }
+
+  /**
+   * fileId 에 해당하는 File 의 name 을 업데이트합니다.
+   *
+   * @param fileId  업데이트할 Note 의 id
+   * @param newName file 의 새로운 이름
+   * @return fileId 에 해당하는 File entity
+   * @throws NoSuchElementException fileId 에 해당하는 객체를 찾을 수 없는 경우
+   */
+  public File updateFileName(UUID fileId, String newName) {
+    return fileRepository.updateName(fileRepository.findFileById(fileId).orElseThrow(), newName);
+  }
+
+  /**
+   * fileId 에 해당하는 File 의 위치를 업데이트합니다.
+   *
+   * @param fileId  업데이트할 File 의 id
+   * @param newDirectoryId file 의 새로운 위치가 될 디렉토리의 id
+   * @return fileId 에 해당하는 File entity
+   * @throws NoSuchElementException 각 파라미터의 id 에 해당하는 객체를 찾을 수 없는 경우
+   */
+  public File moveFile(UUID fileId, UUID newDirectoryId) {
+    File file = fileRepository.findFileById(fileId)
+        .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
+    File newDirectory = fileRepository.findFileById(newDirectoryId)
+        .orElseThrow(() -> new NoSuchElementException("Directory not found with id: " + newDirectoryId));
+    return fileRepository.moveToDirectory(file, newDirectory);
+  }
+
+  public List<File> getFilesByOwnerUserId(UUID userId) {
+    return fileRepository.findFilesByOwner(userId);
+  }
+
+  /**
+   * userId 와 연관된 모든 file 를 가져옵니다.
+   *
+   * @param userId userId
+   * @return userId와 연관된 모든 files
+   */
+  public List<File> getNotesByUserId(UUID userId) {
+    return fileRepository.findFilesByUser(userId);
+  }
+
+  /**
+   * 파일을 삭제하는 가장 표준적인 메소드입니다.
+   * 만약 파일이 디렉토리인 경우, 하위 파일들을 모두 재귀적으로 삭제한 후 디렉토리를 삭제합니다.
+   *
+   * @param file 삭제할 File 객체
+   */
+  @Transactional
+  public void deleteFileRecursively(File file) {
+    // 파일이 디렉토리인 경우, 하위 파일들을 먼저 삭제
+    if (file.getType() == FileType.DIRECTORY) {
+      Stack<ArrayList<File>> subFilesStack = new Stack<>();
+      Stack<Integer> resolvedSubFilesCountStack = new Stack<>();
+      subFilesStack.push(new ArrayList<>(fileRepository.findFilesByDirectory(file)));
+      resolvedSubFilesCountStack.push(0);
+
+      while (!subFilesStack.isEmpty()) {
+        ArrayList<File> subFiles = subFilesStack.peek();
+        Integer resolvedSubFilesCount = resolvedSubFilesCountStack.pop();
+
+        if (resolvedSubFilesCount == subFiles.size()) {
+          for (File subFile : subFiles) {
+            fileUserDataRepository.deleteAllByFileId(subFile.getId());
+          }
+          fileRepository.deleteAll(subFiles);
+          subFilesStack.pop();
+          continue;
+        }
+
+        while (resolvedSubFilesCount < subFiles.size() && subFiles.get(resolvedSubFilesCount).getType() != FileType.DIRECTORY) {
+          resolvedSubFilesCount++;
+        }
+
+        if (resolvedSubFilesCount == subFiles.size()) {
+          resolvedSubFilesCountStack.push(resolvedSubFilesCount);
+          continue;
+        }
+
+        resolvedSubFilesCountStack.push(resolvedSubFilesCount + 1);
+        File subFile = subFiles.get(resolvedSubFilesCount);
+        subFilesStack.push(new ArrayList<>(fileRepository.findFilesByDirectory(subFile)));
+        resolvedSubFilesCountStack.push(0);
+      }
+    }
+
+    fileUserDataRepository.deleteAllByFileId(file.getId());
+    fileRepository.delete(file);
+  }
+}
