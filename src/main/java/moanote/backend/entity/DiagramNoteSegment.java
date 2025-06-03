@@ -1,32 +1,24 @@
 package moanote.backend.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "note")
-public class Note {
-  /**
-   * UUIDv7
-   */
-  @Id
-  @Column(name = "id")
-  private UUID id;
+@Entity
+@Table(name = "diagram_note_segment")
+public class DiagramNoteSegment extends BaseNoteSegment {
 
-  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-  @JoinColumn(name = "file_id", nullable = false)
-  private File file;
+  @Lob
+  @Column(name = "content", length = 65535, nullable = false)
+  private String content;
 }

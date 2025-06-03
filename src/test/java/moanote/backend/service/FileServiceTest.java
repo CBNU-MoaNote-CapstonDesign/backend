@@ -71,4 +71,43 @@ class FileServiceTest {
       assertFalse(fileRepository.existsById(file.getId()), "Root directory and its files should be deleted: " + file.getName());
     }
   }
+
+  @Test
+  void deleteFileRecursivelyByCascade() {
+    File rootDirectory = fileRepository.createRootDirectory();
+    File subDirectory;
+    ArrayList<File> subFilesAtRoot = new ArrayList<>();
+    ArrayList<File> subFilesAtSubDirectory = new ArrayList<>();
+
+    subFilesAtRoot.add(fileRepository.createFile("Doxyfile", FileType.DOCUMENT, rootDirectory));
+    subFilesAtRoot.add(fileRepository.createFile("Makefile", FileType.DOCUMENT, rootDirectory));
+    subFilesAtRoot.add(fileRepository.createFile("Doxyfile", FileType.DOCUMENT, rootDirectory));
+    subDirectory = fileRepository.createFile("src", FileType.DIRECTORY, rootDirectory);
+    subFilesAtRoot.add(subDirectory);
+    subFilesAtSubDirectory.add(fileRepository.createFile("main.cpp", FileType.DOCUMENT, subDirectory));
+    subFilesAtSubDirectory.add(fileRepository.createFile("service.cpp", FileType.DOCUMENT, subDirectory));
+    subFilesAtSubDirectory.add(fileRepository.createFile("service.hpp", FileType.DOCUMENT, subDirectory));
+    subFilesAtSubDirectory.add(fileRepository.createFile("service.cpp", FileType.DOCUMENT, subDirectory));
+
+    subFilesAtSubDirectory.add(fileRepository.createFile("dir", FileType.DIRECTORY, subDirectory));
+    File subSubDirectory = subFilesAtSubDirectory.getLast();
+    subFilesAtSubDirectory.add(fileRepository.createFile("file.txt", FileType.DOCUMENT, subSubDirectory));
+
+    fileRepository.delete(subDirectory);
+    for (File file : subFilesAtSubDirectory) {
+      assertFalse(fileRepository.existsById(file.getId()), "File should be deleted: " + file.getName());
+    }
+    for (File file : subFilesAtRoot) {
+      if (!file.equals(subDirectory)) {
+        assertTrue(fileRepository.existsById(file.getId()), "File should still exist: " + file.getName());
+      } else {
+        assertFalse(fileRepository.existsById(file.getId()), "Subdirectory should be deleted: " + file.getName());
+      }
+    }
+
+    fileRepository.delete(rootDirectory);
+    for (File file : subFilesAtRoot) {
+      assertFalse(fileRepository.existsById(file.getId()), "Root directory and its files should be deleted: " + file.getName());
+    }
+  }
 }

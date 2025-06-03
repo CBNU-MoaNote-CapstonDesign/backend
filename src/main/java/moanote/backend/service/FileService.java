@@ -26,12 +26,15 @@ public class FileService {
 
   private final FileUserDataRepository fileUserDataRepository;
 
+  private final NoteService noteService;
+
   @Autowired
   public FileService(FileRepository fileRepository, UserDataRepository userDataRepository,
-      FileUserDataRepository fileUserDataRepository) {
+      FileUserDataRepository fileUserDataRepository, NoteService noteService) {
     this.fileRepository = fileRepository;
     this.userDataRepository = userDataRepository;
     this.fileUserDataRepository = fileUserDataRepository;
+    this.noteService = noteService;
   }
 
   /**
@@ -49,6 +52,11 @@ public class FileService {
     fileUserDataRepository.createFileUserData(userDataRepository.findById(creatorId).orElseThrow(),
         newFile,
         FileUserData.Permission.OWNER);
+
+    if (type == FileType.DOCUMENT) {
+      noteService.createNote(creatorId, newFile);
+    }
+
     return newFile;
   }
 
@@ -214,5 +222,9 @@ public class FileService {
 
     fileUserDataRepository.deleteAllByFileId(file.getId());
     fileRepository.delete(file);
+  }
+
+  public void deleteAll() {
+    fileRepository.deleteAll();
   }
 }

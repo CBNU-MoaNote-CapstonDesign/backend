@@ -11,22 +11,22 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/notes")
 public class NoteController {
-
-  @Autowired
-  private NoteService noteService;
-
-  @PostMapping("/create")
-  public Note createNote(@RequestBody UUID creatorId) {
-    return noteService.createNote(creatorId);
-  }
-
-  @GetMapping("/user/{userId}")
-  public List<Note> getNotesByUser(@PathVariable UUID userId) {
-    return noteService.getNotesByUserId(userId);
-  }
-
-  @GetMapping("/user/{userId}/owner")
-  public List<Note> getNotesByOwner(@PathVariable UUID userId) {
-    return noteService.getNotesByOwnerUserId(userId);
-  }
+//
+//  @Autowired
+//  private NoteService noteService;
+//
+//  @PostMapping("/create")
+//  public Note createNote(@RequestBody UUID creatorId) {
+//    return noteService.createNote(creatorId);
+//  }
+//
+//  @GetMapping("/user/{userId}")
+//  public List<Note> getNotesByUser(@PathVariable UUID userId) {
+//    return noteService.getNotesByUserId(userId);
+//  }
+//
+//  @GetMapping("/user/{userId}/owner")
+//  public List<Note> getNotesByOwner(@PathVariable UUID userId) {
+//    return noteService.getNotesByOwnerUserId(userId);
+//  }
 }
