@@ -22,11 +22,11 @@ public class FileController {
     this.fileService = fileService;
   }
 
-  @GetMapping("/list/{fileId}")
+  @GetMapping({"/list", "/list/{fileId}"})
   public ResponseEntity<List<FileDTO>> listFiles(@PathVariable(required = false) UUID fileId, @RequestParam(name = "user", required = true) UUID userId, @RequestParam(name = "recursive", defaultValue = "false") boolean recursive) {
 
     try {
-      if (!fileService.hasAnyPermission(fileId, userId)) {
+      if (fileId != null && !fileService.hasAnyPermission(fileId, userId)) {
         return ResponseEntity.status(403).body(List.of());
       }
       return ResponseEntity.ok().body(fileService.getFilesByDirectory(fileId, recursive));
