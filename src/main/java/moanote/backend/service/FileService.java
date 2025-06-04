@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Stack;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 public class FileService {
@@ -169,13 +170,16 @@ public class FileService {
   }
 
   /**
-   * 파일을 삭제하는 가장 표준적인 메소드입니다.
-   * 만약 파일이 디렉토리인 경우, 하위 파일들을 모두 재귀적으로 삭제한 후 디렉토리를 삭제합니다.
+   * <pre>
+   * 파일을 재귀적으로 탐색합니다. 만약 파일이 디렉토리인 경우 하위 파일들을 모두 재귀적으로 탐색하는데, 후위 순회로 탐색합니다.
+   * 같은 형제 노드 관계의 파일 사이에서는 임의의 순서로 방문합니다.
+   * </pre>
    *
-   * @param file 삭제할 File 객체
+   * @param file    탐색을 시작할 File 객체
+   * @param onVisit 각 파일을 방문할 때마다 해당 파일에 대해 호출되는 Consumer 함수. 후위 순회 순서로 onVisit 을 처리합니다.
    */
   @Transactional
-  public void deleteFileRecursively(File file) {
+  public void traverseFilesRecursively(File file, Consumer<File> onVisit) {
     // 파일이 디렉토리인 경우, 하위 파일들을 먼저 삭제
     if (file.getType() == FileType.DIRECTORY) {
       Stack<ArrayList<File>> subFilesStack = new Stack<>();
@@ -189,14 +193,14 @@ public class FileService {
 
         if (resolvedSubFilesCount == subFiles.size()) {
           for (File subFile : subFiles) {
-            fileUserDataRepository.deleteAllByFileId(subFile.getId());
+            onVisit.accept(subFile);
           }
-          fileRepository.deleteAll(subFiles);
           subFilesStack.pop();
           continue;
         }
 
-        while (resolvedSubFilesCount < subFiles.size() && subFiles.get(resolvedSubFilesCount).getType() != FileType.DIRECTORY) {
+        while (resolvedSubFilesCount < subFiles.size()
+            && subFiles.get(resolvedSubFilesCount).getType() != FileType.DIRECTORY) {
           resolvedSubFilesCount++;
         }
 
@@ -212,7 +216,20 @@ public class FileService {
       }
     }
 
-    fileUserDataRepository.deleteAllByFileId(file.getId());
-    fileRepository.delete(file);
+    onVisit.accept(file);
+  }
+
+  /**
+   * 파일을 삭제합니다. 이때, 해당 파일에 대한 모든 FileUserData 를 먼저 삭제합니다. file 이 directory 라면 해당 directory 아래의 모든
+   * 파일을 재귀적으로 삭제합니다.
+   *
+   * @param file 삭제할 디렉토리
+   */
+  @Transactional
+  public void removeFilesRecursively(File file) {
+    traverseFilesRecursively(file, f -> {
+      fileUserDataRepository.deleteAllByFileId(f.getId());
+      fileRepository.delete(f);
+    });
   }
 }
