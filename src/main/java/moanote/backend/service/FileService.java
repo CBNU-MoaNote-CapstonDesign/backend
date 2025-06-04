@@ -1,6 +1,7 @@
 package moanote.backend.service;
 
 import jakarta.transaction.Transactional;
+import moanote.backend.dto.FileDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Stack;
@@ -220,6 +222,32 @@ public class FileService {
   }
 
   /**
+   * 특정 directory 아래의 모든 파일을 불러옵니다
+   *
+   * @param directoryId 디렉토리의 id
+   * @return 해당 디렉토리 아래의 모든 파일 리스트
+   */
+  @Transactional
+  public List<FileDTO> getFilesByDirectory(UUID directoryId, boolean recursive) {
+    File directory = fileRepository.findFileById(directoryId).orElseThrow();
+
+    if (directory.getType() != FileType.DIRECTORY) {
+      throw new IllegalArgumentException("Provided file is not a directory");
+    }
+
+    if (!recursive) {
+      return fileRepository.findFilesByDirectory(directory).stream()
+          .map(FileDTO::new)
+          .toList();
+    }
+
+    LinkedList<FileDTO> files = new LinkedList<>();
+    Consumer<File> onVisit = file -> files.add(new FileDTO(file));
+    traverseFilesRecursively(directory, onVisit);
+    return files;
+  }
+
+  /**
    * 파일을 삭제합니다. 이때, 해당 파일에 대한 모든 FileUserData 를 먼저 삭제합니다. file 이 directory 라면 해당 directory 아래의 모든
    * 파일을 재귀적으로 삭제합니다.
    *
@@ -231,5 +259,38 @@ public class FileService {
       fileUserDataRepository.deleteAllByFileId(f.getId());
       fileRepository.delete(f);
     });
+  }
+
+  /**
+   * 특정 파일에 대해 특정 유저가 특정 permission 을 가지고 있는지 확인합니다.
+   *
+   * @param fileId 검사할 file 의 id
+   * @param userId 검사할 user 의 id
+   * @param permission 검사할 permission
+   * @return 해당 유저가 해당 파일에 대해 해당 permission 을 가지고 있는지 여부
+   */
+  public boolean hasPermission(UUID fileId, UUID userId, FileUserData.Permission permission) {
+    File file = fileRepository.findById(fileId).orElseThrow();
+    UserData userData = userDataRepository.findById(userId).orElseThrow();
+    return fileUserDataRepository
+        .findByFileAndUser(file, userData)
+        .map(fileUserData -> fileUserData.getPermission() == permission)
+        .orElse(false);
+  }
+
+  /**
+   * 특정 파일에 대해 특정 유저가 permission 을 가지고 있는지 확인합니다. permission 이 무엇이든 상관없습니다.
+   * 만약 특정 권한을 가지는 있는 지를 확인하고 싶다면, hasPermission(fileId, userId, permission) 메소드를 사용하세요.
+   * @param fileId 검사할 file 의 id
+   * @param userId 검사할 user 의 id
+   * @see #hasPermission(UUID, UUID, FileUserData.Permission)
+   * @return 해당 유저가 해당 파일에 대해 어떤 permission 이든 가지고 있는지 여부
+   */
+  public boolean hasAnyPermission(UUID fileId, UUID userId) {
+    File file = fileRepository.findById(fileId).orElseThrow();
+    UserData userData = userDataRepository.findById(userId).orElseThrow();
+    return fileUserDataRepository
+        .findByFileAndUser(file, userData)
+        .isPresent();
   }
 }
