@@ -34,7 +34,7 @@ class FileServiceTest {
   private FileRepository fileRepository;
 
   @Test
-  void deleteFileRecursively() {
+  void removeFilesRecursively() {
     File rootDirectory = fileRepository.createRootDirectory();
     File subDirectory;
     ArrayList<File> subFilesAtRoot = new ArrayList<>();
@@ -54,7 +54,7 @@ class FileServiceTest {
     File subSubDirectory = subFilesAtSubDirectory.getLast();
     subFilesAtSubDirectory.add(fileRepository.createFile("file.txt", FileType.DOCUMENT, subSubDirectory));
 
-    fileService.deleteFileRecursively(subDirectory);
+    fileService.removeFilesRecursively(subDirectory);
     for (File file : subFilesAtSubDirectory) {
       assertFalse(fileRepository.existsById(file.getId()), "File should be deleted: " + file.getName());
     }
@@ -66,7 +66,7 @@ class FileServiceTest {
       }
     }
 
-    fileService.deleteFileRecursively(rootDirectory);
+    fileService.removeFilesRecursively(rootDirectory);
     for (File file : subFilesAtRoot) {
       assertFalse(fileRepository.existsById(file.getId()), "Root directory and its files should be deleted: " + file.getName());
     }
