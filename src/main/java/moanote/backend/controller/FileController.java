@@ -35,7 +35,19 @@ public class FileController {
     }
   }
 
-  @PostMapping("/create/{directoryId}")
+  /**
+   * <pre>
+   * 새로운 파일을 생성합니다.
+   * 만약 directoryId가 주어지면 해당 디렉토리에 파일을 생성합니다.
+   * 그렇지 않으면 루트 디렉토리에 파일을 생성합니다.
+   * </pre>
+   *
+   * @param directoryId 디렉토리 ID, null 이면 루트 디렉토리에 생성
+   * @param userId 사용자 ID, 파일을 생성하는 사용자
+   * @param fileCreateDTO 파일 생성에 필요한 정보 (이름, 타입)
+   * @return 생성된 File 의 DTO
+   */
+  @PostMapping({"/create", "/create/{directoryId}"})
   public ResponseEntity<FileDTO> createFile(@PathVariable(required = false) UUID directoryId, @RequestParam(name = "user") UUID userId, @RequestBody FileCreateDTO fileCreateDTO) {
 
     FileDTO createdFile;
