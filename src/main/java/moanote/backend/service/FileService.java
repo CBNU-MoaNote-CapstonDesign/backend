@@ -48,11 +48,30 @@ public class FileService {
    */
   @Transactional
   public File createFile(UUID creatorId, String filename, FileType type, File directory) {
+    if (directory.getType() != FileType.DIRECTORY) {
+      throw new IllegalArgumentException("Provided file is not a directory");
+    }
     File newFile = fileRepository.createFile(filename, type, directory);
     fileUserDataRepository.createFileUserData(userDataRepository.findById(creatorId).orElseThrow(),
         newFile,
         FileUserData.Permission.OWNER);
     return newFile;
+  }
+
+  /**
+   * 새로운 file 을 생성하고, 생성 요청을 한 유저에게 파일에 대한 OWNER 권한을 부여합니다.
+   *
+   * @param creatorId   생성자 id
+   * @param filename    생성할 파일의 이름
+   * @param type        생성할 파일의 성격
+   * @param directoryId 생성된 파일이 위치할 디렉토리의 id
+   * @return 생성된 File entity
+   */
+  @Transactional
+  public File createFile(UUID creatorId, String filename, FileType type, UUID directoryId) {
+    return createFile(creatorId, filename, type,
+        fileRepository.findFileById(directoryId).orElseThrow(
+            () -> new NoSuchElementException("Directory not found with id: " + directoryId)));
   }
 
   /**
