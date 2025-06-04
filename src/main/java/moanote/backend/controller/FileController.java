@@ -3,11 +3,13 @@ package moanote.backend.controller;
 
 import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
+import moanote.backend.dto.FileEditDTO;
 import moanote.backend.service.FileService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @RestController
@@ -33,7 +35,7 @@ public class FileController {
     }
   }
 
-  @PostMapping("/api/files/create/{directoryId}")
+  @PostMapping("/create/{directoryId}")
   public ResponseEntity<FileDTO> createFile(@PathVariable(required = false) UUID directoryId, @RequestParam(name = "user") UUID userId, @RequestBody FileCreateDTO fileCreateDTO) {
 
     FileDTO createdFile;
@@ -49,6 +51,22 @@ public class FileController {
       return ResponseEntity.status(201).body(createdFile);
     } catch (Exception e) {
       return ResponseEntity.status(400).body(null);
+    }
+  }
+
+  @PostMapping("/edit/{fileId}")
+  public ResponseEntity<FileDTO> editFile(@PathVariable UUID fileId, @RequestParam(name = "user") UUID userId, @RequestBody FileEditDTO fileEditDTO) {
+    try {
+      return ResponseEntity.ok().body(new FileDTO(fileService.editFile(userId, fileId, fileEditDTO)));
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).body(null);
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).body(null);
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).body(null);
     }
   }
 }

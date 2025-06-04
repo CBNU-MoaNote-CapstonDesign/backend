@@ -2,6 +2,7 @@ package moanote.backend.service;
 
 import jakarta.transaction.Transactional;
 import moanote.backend.dto.FileDTO;
+import moanote.backend.dto.FileEditDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
@@ -311,5 +312,36 @@ public class FileService {
     return fileUserDataRepository
         .findByFileAndUser(file, userData)
         .isPresent();
+  }
+
+  @Transactional
+  public File editFile(UUID userId, UUID fileId, FileEditDTO fileEditDTO) {
+    File file = fileRepository.findById(fileId)
+        .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
+
+    if (fileEditDTO.name() != null) {
+      file.setName(fileEditDTO.name());
+    }
+
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+
+    if (!hasAnyPermission(fileId, userId)) {
+      throw new IllegalArgumentException("User does not have permission to edit this file");
+    }
+
+    if (fileEditDTO.dir() == null) {
+      fileEditDTO = new FileEditDTO(fileEditDTO.name(), fileRepository.getRootDirectory(userId).getId());
+    }
+
+    UUID newDirectoryId = fileEditDTO.dir();
+    file.setDirectory(fileRepository.findFileById(newDirectoryId)
+        .orElseThrow(() -> new NoSuchElementException("Directory not found with id: " + newDirectoryId)));
+
+    if (!hasAnyPermission(newDirectoryId, userId)) {
+      throw new IllegalArgumentException("User does not have permission to move this file to the specified directory");
+    }
+
+    return fileRepository.save(file);
   }
 }
