@@ -56,8 +56,7 @@ public class FileService {
   }
 
   /**
-   * 새로운 file 을 생성하고, 생성 요청을 한 유저에게 파일에 대한 OWNER 권한을 부여합니다.
-   * 파일이 루트 디렉토리에 생성됩니다.
+   * 새로운 file 을 생성하고, 생성 요청을 한 유저에게 파일에 대한 OWNER 권한을 부여합니다. 파일이 루트 디렉토리에 생성됩니다.
    *
    * @param creatorId 생성자 id
    * @param filename  생성할 파일의 이름
@@ -70,11 +69,10 @@ public class FileService {
   }
 
   /**
-   * createRootDirectory 는 유저의 루트 디렉토리를 생성합니다.
-   * 이미 루트 디렉토리가 존재하는 경우에는 아무 작업도 하지 않습니다.
+   * createRootDirectory 는 유저의 루트 디렉토리를 생성합니다. 이미 루트 디렉토리가 존재하는 경우에는 아무 작업도 하지 않습니다.
    *
    * @param userId permission 을 삭제할 User 의 id
-    * @return 생성된 루트 디렉토리 File entity
+   * @return 생성된 루트 디렉토리 File entity
    */
   public File createRootDirectory(UUID userId) {
     try {
@@ -144,7 +142,7 @@ public class FileService {
   /**
    * fileId 에 해당하는 File 의 위치를 업데이트합니다.
    *
-   * @param fileId  업데이트할 File 의 id
+   * @param fileId         업데이트할 File 의 id
    * @param newDirectoryId file 의 새로운 위치가 될 디렉토리의 id
    * @return fileId 에 해당하는 File entity
    * @throws NoSuchElementException 각 파라미터의 id 에 해당하는 객체를 찾을 수 없는 경우
@@ -153,7 +151,8 @@ public class FileService {
     File file = fileRepository.findFileById(fileId)
         .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
     File newDirectory = fileRepository.findFileById(newDirectoryId)
-        .orElseThrow(() -> new NoSuchElementException("Directory not found with id: " + newDirectoryId));
+        .orElseThrow(
+            () -> new NoSuchElementException("Directory not found with id: " + newDirectoryId));
     return fileRepository.moveToDirectory(file, newDirectory);
   }
 
@@ -264,8 +263,8 @@ public class FileService {
   /**
    * 특정 파일에 대해 특정 유저가 특정 permission 을 가지고 있는지 확인합니다.
    *
-   * @param fileId 검사할 file 의 id
-   * @param userId 검사할 user 의 id
+   * @param fileId     검사할 file 의 id
+   * @param userId     검사할 user 의 id
    * @param permission 검사할 permission
    * @return 해당 유저가 해당 파일에 대해 해당 permission 을 가지고 있는지 여부
    */
@@ -279,12 +278,13 @@ public class FileService {
   }
 
   /**
-   * 특정 파일에 대해 특정 유저가 permission 을 가지고 있는지 확인합니다. permission 이 무엇이든 상관없습니다.
-   * 만약 특정 권한을 가지는 있는 지를 확인하고 싶다면, hasPermission(fileId, userId, permission) 메소드를 사용하세요.
+   * 특정 파일에 대해 특정 유저가 permission 을 가지고 있는지 확인합니다. permission 이 무엇이든 상관없습니다. 만약 특정 권한을 가지는 있는 지를 확인하고
+   * 싶다면, hasPermission(fileId, userId, permission) 메소드를 사용하세요.
+   *
    * @param fileId 검사할 file 의 id
    * @param userId 검사할 user 의 id
-   * @see #hasPermission(UUID, UUID, FileUserData.Permission)
    * @return 해당 유저가 해당 파일에 대해 어떤 permission 이든 가지고 있는지 여부
+   * @see #hasPermission(UUID, UUID, FileUserData.Permission)
    */
   public boolean hasAnyPermission(UUID fileId, UUID userId) {
     File file = fileRepository.findById(fileId).orElseThrow();
