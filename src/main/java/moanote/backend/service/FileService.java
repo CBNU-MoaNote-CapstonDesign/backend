@@ -92,7 +92,7 @@ public class FileService {
    * @param fileId     permission 을 부여할 File 의 id
    * @param userId     permission 을 부여할 User 의 id
    * @param permission 부여할 permission
-   * @return permission 을 부여한 Note entity
+   * @return permission 을 부여한 File entity
    */
   @Transactional
   public File grantPermission(UUID fileId, UUID userId, FileUserData.Permission permission) {
@@ -122,14 +122,14 @@ public class FileService {
    * @return 찾아진 File entity 객체
    * @throws NoSuchElementException fileId 에 해당하는 객체를 찾을 수 없는 경우
    */
-  public File getNoteById(UUID fileId) {
+  public File getFileById(UUID fileId) {
     return fileRepository.findById(fileId).orElseThrow();
   }
 
   /**
    * fileId 에 해당하는 File 의 name 을 업데이트합니다.
    *
-   * @param fileId  업데이트할 Note 의 id
+   * @param fileId  업데이트할 File 의 id
    * @param newName file 의 새로운 이름
    * @return fileId 에 해당하는 File entity
    * @throws NoSuchElementException fileId 에 해당하는 객체를 찾을 수 없는 경우
@@ -164,7 +164,7 @@ public class FileService {
    * @param userId userId
    * @return userId와 연관된 모든 files
    */
-  public List<File> getNotesByUserId(UUID userId) {
+  public List<File> getFilesByUserId(UUID userId) {
     return fileRepository.findFilesByUser(userId);
   }
 
