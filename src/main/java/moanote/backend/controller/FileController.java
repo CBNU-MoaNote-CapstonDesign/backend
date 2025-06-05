@@ -39,6 +39,23 @@ public class FileController {
     }
   }
 
+  @GetMapping("/metadata/{fileId}")
+  public ResponseEntity<FileDTO> fileMetadata(@PathVariable(required = false) UUID fileId, @RequestParam(name = "user", required = true) UUID userId) {
+
+    try {
+      return ResponseEntity.ok().body(new FileDTO(fileService.getFileById(fileId, userId)));
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).body(null);
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).body(null);
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).body(null);
+    }
+  }
+
   /**
    * <pre>
    * 새로운 파일을 생성합니다.
