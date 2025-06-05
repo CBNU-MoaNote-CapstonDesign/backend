@@ -137,4 +137,37 @@ class FileControllerTest {
           "Response should not be successful");
     }
   }
+
+  @Test
+  void deleteFile() {
+    UserData user = userService.createUser("testUser", "testPassword");
+    UserData otherUser = userService.createUser("otherUser", "otherPassword");
+
+    File file = fileService.createFile(user.getId(), "file", FileType.DOCUMENT);
+    fileService.grantPermission(file.getId(), otherUser.getId(), FileUserData.Permission.WRITE);
+
+    {
+      var response = fileController.deleteFile(file.getId(), user.getId());
+      Assert.isTrue(response.getStatusCode().is2xxSuccessful(),
+          "Response should be successful for owner");
+      Assert.isTrue(fileRepository.findById(file.getId()).isEmpty(),
+          "File should be deleted");
+    }
+
+    {
+      var response = fileController.deleteFile(file.getId(), user.getId());
+      Assert.isTrue(response.getStatusCode().is4xxClientError(),
+          "Response should not be successful for deleted file");
+    }
+
+    {
+      var files = fileService.getFilesByOwnerUserId(user.getId());
+      Assert.isTrue(files.size() == 1, "No files should not be left for the user");
+    }
+
+    {
+      var files = fileService.getFilesByUserId(otherUser.getId());
+      Assert.isTrue(files.size() == 1, "No files should not be left for the user");
+    }
+  }
 }

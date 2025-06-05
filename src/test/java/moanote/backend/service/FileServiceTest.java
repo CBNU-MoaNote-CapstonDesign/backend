@@ -1,9 +1,9 @@
 package moanote.backend.service;
 
-import jakarta.transaction.Transactional;
 import moanote.backend.BackendApplication;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2, replace = AutoConfigureTestDatabase.Replace.ANY)
 @TestPropertySource("classpath:application.properties")
-@Transactional
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = BackendApplication.class)
@@ -33,28 +32,32 @@ class FileServiceTest {
   @Autowired
   private FileRepository fileRepository;
 
+  @Autowired
+  private UserService userDataService;
+
   @Test
   void removeFilesRecursively() {
-    File rootDirectory = fileRepository.createRootDirectory();
+    UserData userData = userDataService.createUser("testuser", "testpassword");
+    File rootDirectory = fileRepository.getRootDirectory(userData);
     File subDirectory;
     ArrayList<File> subFilesAtRoot = new ArrayList<>();
     ArrayList<File> subFilesAtSubDirectory = new ArrayList<>();
 
-    subFilesAtRoot.add(fileRepository.createFile("Doxyfile", FileType.DOCUMENT, rootDirectory));
-    subFilesAtRoot.add(fileRepository.createFile("Makefile", FileType.DOCUMENT, rootDirectory));
-    subFilesAtRoot.add(fileRepository.createFile("Doxyfile", FileType.DOCUMENT, rootDirectory));
-    subDirectory = fileRepository.createFile("src", FileType.DIRECTORY, rootDirectory);
+    subFilesAtRoot.add(fileService.createFile(userData.getId(), "Doxyfile", FileType.DOCUMENT, rootDirectory.getId()));
+    subFilesAtRoot.add(fileService.createFile(userData.getId(), "Makefile", FileType.DOCUMENT, rootDirectory.getId()));
+    subFilesAtRoot.add(fileService.createFile(userData.getId(), "Doxyfile", FileType.DOCUMENT, rootDirectory.getId()));
+    subDirectory = fileService.createFile(userData.getId(), "src", FileType.DIRECTORY, rootDirectory.getId());
     subFilesAtRoot.add(subDirectory);
-    subFilesAtSubDirectory.add(fileRepository.createFile("main.cpp", FileType.DOCUMENT, subDirectory));
-    subFilesAtSubDirectory.add(fileRepository.createFile("service.cpp", FileType.DOCUMENT, subDirectory));
-    subFilesAtSubDirectory.add(fileRepository.createFile("service.hpp", FileType.DOCUMENT, subDirectory));
-    subFilesAtSubDirectory.add(fileRepository.createFile("service.cpp", FileType.DOCUMENT, subDirectory));
+    subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "main.cpp", FileType.DOCUMENT, subDirectory.getId()));
+    subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "service.cpp", FileType.DOCUMENT, subDirectory.getId()));
+    subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "service.hpp", FileType.DOCUMENT, subDirectory.getId()));
+    subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "service.cpp", FileType.DOCUMENT, subDirectory.getId()));
 
-    subFilesAtSubDirectory.add(fileRepository.createFile("dir", FileType.DIRECTORY, subDirectory));
+    subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "dir", FileType.DIRECTORY, subDirectory.getId()));
     File subSubDirectory = subFilesAtSubDirectory.getLast();
-    subFilesAtSubDirectory.add(fileRepository.createFile("file.txt", FileType.DOCUMENT, subSubDirectory));
+    subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "file.txt", FileType.DOCUMENT, subSubDirectory.getId()));
 
-    fileService.removeFilesRecursively(subDirectory);
+    fileService.deleteFile(subDirectory.getId(), userData.getId());
     for (File file : subFilesAtSubDirectory) {
       assertFalse(fileRepository.existsById(file.getId()), "File should be deleted: " + file.getName());
     }
@@ -64,11 +67,6 @@ class FileServiceTest {
       } else {
         assertFalse(fileRepository.existsById(file.getId()), "Subdirectory should be deleted: " + file.getName());
       }
-    }
-
-    fileService.removeFilesRecursively(rootDirectory);
-    for (File file : subFilesAtRoot) {
-      assertFalse(fileRepository.existsById(file.getId()), "Root directory and its files should be deleted: " + file.getName());
     }
   }
 }
