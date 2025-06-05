@@ -29,8 +29,7 @@ import java.util.UUID;
 public class File {
 
   /**
-   * 파일의 종류를 나타내는 열거형입니다.
-   * This enum represents the type of file, either a document or a directory.
+   * 파일의 종류를 나타내는 열거형입니다. This enum represents the type of file, either a document or a directory.
    */
   public enum FileType {
     DOCUMENT("DOCUMENT", 0), DIRECTORY("DIRECTORY", 1);
@@ -52,26 +51,32 @@ public class File {
   private UUID id;
 
   /**
+   * <pre>
    * 파일의 이름
    * The name of the file or directory.
+   * </pre>
    */
   @Column(name = "name", nullable = false)
   private String name;
 
   /**
+   * <pre>
    * 파일의 종류를 나타내는 열거형입니다.
    * The type of the file, either a document or a directory.
    * DB에서는 INTEGER로 저장됩니다.
+   * </pre>>
    */
   @Column(name = "type", nullable = false)
   @Enumerated(EnumType.STRING)
   private FileType type;
 
   /**
+   * <pre>
    * 파일이 속한 디렉토리입니다.
    * This field is used to represent the parent directory of the file.
    *
    * 파일이 루트 디렉토리인 경우에만 null이 될 수 있습니다.
+   * </pre>
    */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "directory_id", nullable = true)

@@ -43,7 +43,10 @@ public class FileService {
   }
 
   /**
+   * <pre>
    * 새로운 file 을 생성하고, 생성 요청을 한 유저에게 파일에 대한 OWNER 권한을 부여합니다.
+   * 파라미터의 유효성 체크는 caller 가 수행해야 합니다.
+   * </pre>
    *
    * @param creatorId 생성자 id
    * @param filename  생성할 파일의 이름
@@ -95,7 +98,7 @@ public class FileService {
   /**
    * createRootDirectory 는 유저의 루트 디렉토리를 생성합니다. 이미 루트 디렉토리가 존재하는 경우에는 아무 작업도 하지 않습니다.
    *
-   * @param userId permission 을 삭제할 User 의 id
+   * @param userId 루트 디렉토리를 생성할 유저의 id
    * @return 생성된 루트 디렉토리 File entity
    */
   public File createRootDirectory(UUID userId) {
@@ -205,7 +208,6 @@ public class FileService {
    */
   @Transactional
   public void traverseFilesRecursively(File file, Consumer<File> onVisit) {
-    // 파일이 디렉토리인 경우, 하위 파일들을 먼저 삭제
     if (file.getType() == FileType.DIRECTORY) {
       Stack<ArrayList<File>> subFilesStack = new Stack<>();
       Stack<Integer> resolvedSubFilesCountStack = new Stack<>();
