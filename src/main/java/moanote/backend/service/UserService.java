@@ -2,10 +2,11 @@ package moanote.backend.service;
 
 import jakarta.transaction.Transactional;
 import moanote.backend.dto.UserDataDTO;
-import moanote.backend.entity.Note;
+import moanote.backend.entity.File;
+import moanote.backend.entity.FileUserData.Permission;
 import moanote.backend.entity.UserData;
-import moanote.backend.repository.NoteRepository;
-import moanote.backend.repository.NoteUserDataRepository;
+import moanote.backend.repository.FileRepository;
+import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
 import moanote.backend.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,14 +22,16 @@ public class UserService {
   private UserDataRepository userDataRepository;
 
   @Autowired
-  private NoteUserDataRepository noteUserDataRepository;
+  private FileRepository fileRepository;
 
   @Autowired
-  private NoteRepository noteRepository;
+  private FileUserDataRepository fileUserDataRepository;
 
   @Transactional
   public UserData createUser(String username, String password) {
     UserData userData = userDataRepository.create(username, password);
+    File rootDirectory = fileRepository.createRootDirectory();
+    fileUserDataRepository.createFileUserData(userData, rootDirectory, Permission.OWNER);
     return userData;
   }
 
