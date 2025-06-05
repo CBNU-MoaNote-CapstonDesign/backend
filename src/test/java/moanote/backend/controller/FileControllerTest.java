@@ -5,6 +5,7 @@ import moanote.backend.BackendApplication;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.FileUserData;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.service.FileService;
@@ -135,6 +136,28 @@ class FileControllerTest {
       var response = fileController.listFiles(subSubdirectory.getId(), otherUser.getId(), false);
       Assert.isTrue(response.getStatusCode().is4xxClientError(),
           "Response should not be successful");
+    }
+  }
+
+  @Test
+  void fileMetadata() {
+    UserData user = userService.createUser("testUser", "testPassword");
+    UserData otherUser = userService.createUser("otherUser", "otherPassword");
+
+    File file = fileService.createFile(user.getId(), "file", FileType.DOCUMENT);
+
+    {
+      var response = fileController.fileMetadata(file.getId(), user.getId());
+      Assert.isTrue(response.getStatusCode().is2xxSuccessful(),
+          "Response should be successful for owner");
+      Assert.isTrue(response.getBody() != null && response.getBody().equals(new FileDTO(file)),
+          "Response body should match the file");
+    }
+
+    {
+      var response = fileController.fileMetadata(file.getId(), otherUser.getId());
+      Assert.isTrue(response.getStatusCode().is4xxClientError(),
+          "Response should not be successful for non-owner");
     }
   }
 
