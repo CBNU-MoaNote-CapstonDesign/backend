@@ -1,6 +1,6 @@
 package moanote.backend.service;
 
-import com.github.f4b6a3.uuid.UuidCreator;
+import jakarta.transaction.Transactional;
 import moanote.backend.dto.UserDataDTO;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.UserData;
@@ -9,8 +9,6 @@ import moanote.backend.repository.NoteUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
 import moanote.backend.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
@@ -28,12 +26,10 @@ public class UserService {
   @Autowired
   private NoteRepository noteRepository;
 
+  @Transactional
   public UserData createUser(String username, String password) {
-    UserData userData = new UserData();
-    userData.setUsername(username);
-    userData.setPassword(password);
-    userData.setId(UuidCreator.getTimeOrderedEpoch());
-    return userDataRepository.save(userData);
+    UserData userData = userDataRepository.create(username, password);
+    return userData;
   }
 
   public UserData findByUsername(String username) {
