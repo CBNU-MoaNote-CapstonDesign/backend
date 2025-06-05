@@ -48,21 +48,16 @@ public class FileService {
    * 파라미터의 유효성 체크는 caller 가 수행해야 합니다.
    * </pre>
    *
-   * @param creatorId 생성자 id
+   * @param creator 생성자 id
    * @param filename  생성할 파일의 이름
    * @param type      생성할 파일의 성격
    * @param directory 생성된 파일이 위치할 디렉토리
    * @return 생성된 File entity
    */
   @Transactional
-  public File createFile(UUID creatorId, String filename, FileType type, File directory) {
-    if (directory.getType() != FileType.DIRECTORY) {
-      throw new IllegalArgumentException("Provided file is not a directory");
-    }
+  protected File doCreateFile(UserData creator, String filename, FileType type, File directory) {
     File newFile = fileRepository.createFile(filename, type, directory);
-    fileUserDataRepository.createFileUserData(userDataRepository.findById(creatorId).orElseThrow(),
-        newFile,
-        FileUserData.Permission.OWNER);
+    FileUserData permission = fileUserDataRepository.createFileUserData(creator, newFile, FileUserData.Permission.OWNER);
     return newFile;
   }
 
@@ -77,9 +72,17 @@ public class FileService {
    */
   @Transactional
   public File createFile(UUID creatorId, String filename, FileType type, UUID directoryId) {
-    return createFile(creatorId, filename, type,
-        fileRepository.findFileById(directoryId).orElseThrow(
-            () -> new NoSuchElementException("Directory not found with id: " + directoryId)));
+    UserData creator = userDataRepository.findById(creatorId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + creatorId));
+    File directory = fileRepository.findFileById(directoryId).orElseThrow(
+        () -> new NoSuchElementException("Directory not found with id: " + directoryId));
+    if (directory.getType() != FileType.DIRECTORY) {
+      throw new NoSuchElementException("Provided file is not a directory");
+    }
+    if (!hasAnyPermission(directory.getId(), creatorId)) {
+      throw new IllegalArgumentException("User does not have permission to create file in this directory");
+    }
+    return doCreateFile(creator, filename, type, directory);
   }
 
   /**
@@ -92,7 +95,9 @@ public class FileService {
    */
   @Transactional
   public File createFile(UUID creatorId, String filename, FileType type) {
-    return createFile(creatorId, filename, type, fileRepository.getRootDirectory(creatorId));
+    UserData creator = userDataRepository.findById(creatorId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + creatorId));
+    return doCreateFile(creator, filename, type, fileRepository.getRootDirectory(creator));
   }
 
   /**
@@ -102,13 +107,14 @@ public class FileService {
    * @return 생성된 루트 디렉토리 File entity
    */
   public File createRootDirectory(UUID userId) {
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
     try {
-      return fileRepository.getRootDirectory(userId);
+      return fileRepository.getRootDirectory(user);
     } catch (NoSuchElementException e) {
       // 루트 디렉토리가 존재하지 않는 경우에만 생성
       File rootDirectory = fileRepository.createRootDirectory();
-      fileUserDataRepository.createFileUserData(userDataRepository.findById(userId).orElseThrow(),
-          rootDirectory,
+      FileUserData permission = fileUserDataRepository.createFileUserData(user, rootDirectory,
           FileUserData.Permission.OWNER);
       return rootDirectory;
     }
@@ -150,7 +156,10 @@ public class FileService {
    * @return 찾아진 File entity 객체
    * @throws NoSuchElementException fileId 에 해당하는 객체를 찾을 수 없는 경우
    */
-  public File getFileById(UUID fileId) {
+  public File getFileById(UUID fileId, UUID userId) {
+    if (!hasAnyPermission(fileId, userId)) {
+      throw new IllegalArgumentException("User does not have permission to access this file");
+    }
     return fileRepository.findById(fileId).orElseThrow();
   }
 
@@ -184,7 +193,9 @@ public class FileService {
   }
 
   public List<File> getFilesByOwnerUserId(UUID userId) {
-    return fileRepository.findFilesByOwner(userId);
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+    return fileRepository.findFilesByOwner(user);
   }
 
   /**
@@ -194,7 +205,9 @@ public class FileService {
    * @return userId와 연관된 모든 files
    */
   public List<File> getFilesByUserId(UUID userId) {
-    return fileRepository.findFilesByUser(userId);
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+    return fileRepository.findFilesByUser(user);
   }
 
   /**
@@ -255,9 +268,10 @@ public class FileService {
   @Transactional
   public List<FileDTO> getFilesInDirectory(UUID directoryId, UUID userId, boolean recursive) {
     File directory;
-
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
     if (directoryId == null) {
-      directory = fileRepository.getRootDirectory(userId);
+      directory = fileRepository.getRootDirectory(user);
     } else {
       directory = fileRepository.findFileById(directoryId).orElseThrow();
     }
@@ -349,20 +363,19 @@ public class FileService {
   public File editFile(UUID userId, UUID fileId, FileEditDTO fileEditDTO) {
     File file = fileRepository.findById(fileId)
         .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
     if (fileEditDTO.name() != null) {
       file.setName(fileEditDTO.name());
     }
-
-    UserData user = userDataRepository.findById(userId)
-        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
     if (!hasAnyPermission(fileId, userId)) {
       throw new IllegalArgumentException("User does not have permission to edit this file");
     }
 
     if (fileEditDTO.dir() == null) {
-      fileEditDTO = new FileEditDTO(fileEditDTO.name(), fileRepository.getRootDirectory(userId).getId());
+      fileEditDTO = new FileEditDTO(fileEditDTO.name(), fileRepository.getRootDirectory(user).getId());
     }
 
     UUID newDirectoryId = fileEditDTO.dir();

@@ -3,6 +3,7 @@ package moanote.backend.repository;
 import com.github.f4b6a3.uuid.UuidCreator;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.UserData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,18 +15,18 @@ public interface FileRepository extends JpaRepository<File, UUID> {
       SELECT n
       FROM File n
       JOIN FileUserData fud ON n.id = fud.file.id
-      WHERE fud.user.id = :owner
+      WHERE fud.user = :owner
       AND fud.permission = 'OWNER'
       """)
-  List<File> findFilesByOwner(@Param("owner") UUID ownerUserId);
+  List<File> findFilesByOwner(@Param("owner") UserData ownerUser);
 
   @Query(value = """
       SELECT n
       FROM File n
       JOIN FileUserData fud ON n.id = fud.file.id
-      WHERE fud.user.id = :user
+      WHERE fud.user = :user
       """)
-  List<File> findFilesByUser(@Param("user") UUID ownerUserId);
+  List<File> findFilesByUser(@Param("user") UserData user);
 
   List<File> findFilesByDirectory(File directory);
 
@@ -34,14 +35,14 @@ public interface FileRepository extends JpaRepository<File, UUID> {
   /**
    * 특정 유저의 루트 디렉토리를 반환합니다.
    *
-   * @param ownerUserId 유저의 ID
+   * @param user 조회할 유저
    * @return 해당 유저의 루트 디렉토리
    */
-  default File getRootDirectory(UUID ownerUserId) {
-    return findFilesByUser(ownerUserId).stream()
+  default File getRootDirectory(UserData user) {
+    return findFilesByUser(user).stream()
         .filter(file -> file.getType() == FileType.DIRECTORY && file.getDirectory() == null)
         .findFirst()
-        .orElseThrow(() -> new NoSuchElementException("Root directory not found for user: " + ownerUserId));
+        .orElseThrow(() -> new NoSuchElementException("Root directory not found for user: " + user.getId()));
   }
 
   default File createFile(String name, FileType type, File directory) {

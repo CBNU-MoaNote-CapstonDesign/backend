@@ -56,11 +56,11 @@ class FileRepositoryTest {
     fileService.createFile(otherUser.getId(), "otherFile.txt", FileType.DOCUMENT);
     fileService.createFile(otherUser.getId(), "otherDirectory", FileType.DIRECTORY);
 
-    List<File> foundNotes = fileRepository.findFilesByOwner(user.getId());
+    List<File> foundNotes = fileRepository.findFilesByOwner(user).stream()
+        .sorted((o1, o2) -> UuidComparator.defaultCompare(o1.getId(), o2.getId())).toList();
 
     assertEquals(4, foundNotes.size());
     files.sort((o1, o2) -> UuidComparator.defaultCompare(o1.getId(), o2.getId()));
-    foundNotes.sort((o1, o2) -> UuidComparator.defaultCompare(o1.getId(), o2.getId()));
     assertEquals(files.get(0).getId(), foundNotes.get(0).getId());
     assertEquals(files.get(1).getId(), foundNotes.get(1).getId());
     assertEquals(files.get(2).getId(), foundNotes.get(2).getId());

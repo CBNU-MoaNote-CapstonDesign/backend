@@ -57,16 +57,20 @@ public class FileController {
     FileDTO createdFile;
     try {
       if (directoryId != null) {
-        if (!fileService.hasAnyPermission(directoryId, userId)) {
-          return ResponseEntity.status(403).body(null);
-        }
         createdFile = new FileDTO(fileService.createFile(userId, fileCreateDTO.name(), fileCreateDTO.type(), directoryId));
       } else {
         createdFile = new FileDTO(fileService.createFile(userId, fileCreateDTO.name(), fileCreateDTO.type()));
       }
       return ResponseEntity.status(201).body(createdFile);
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).body(null);
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).body(null);
     } catch (Exception e) {
-      return ResponseEntity.status(400).body(null);
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).body(null);
     }
   }
 
