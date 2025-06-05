@@ -85,4 +85,21 @@ public class FileController {
       return ResponseEntity.status(500).body(null);
     }
   }
+
+  @PostMapping("/delete/{fileId}")
+  public ResponseEntity<Void> deleteFile(@PathVariable UUID fileId, @RequestParam(name = "user") UUID userId) {
+    try {
+      fileService.deleteFile(fileId, userId);
+      return ResponseEntity.noContent().build();
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).build();
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).build();
+    }
+  }
 }

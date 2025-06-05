@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -11,6 +12,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
 import java.util.UUID;
 
 /**
@@ -71,7 +73,8 @@ public class File {
    *
    * 파일이 루트 디렉토리인 경우에만 null이 될 수 있습니다.
    */
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "directory_id", nullable = true)
+  @OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
   private File directory;
 }

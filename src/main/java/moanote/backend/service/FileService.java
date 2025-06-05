@@ -1,5 +1,6 @@
 package moanote.backend.service;
 
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
@@ -30,12 +31,15 @@ public class FileService {
 
   private final FileUserDataRepository fileUserDataRepository;
 
+  private final EntityManager entityManager;
+
   @Autowired
   public FileService(FileRepository fileRepository, UserDataRepository userDataRepository,
-      FileUserDataRepository fileUserDataRepository) {
+      FileUserDataRepository fileUserDataRepository, EntityManager entityManager) {
     this.fileRepository = fileRepository;
     this.userDataRepository = userDataRepository;
     this.fileUserDataRepository = fileUserDataRepository;
+    this.entityManager = entityManager;
   }
 
   /**
@@ -281,14 +285,28 @@ public class FileService {
    * 파일을 삭제합니다. 이때, 해당 파일에 대한 모든 FileUserData 를 먼저 삭제합니다. file 이 directory 라면 해당 directory 아래의 모든
    * 파일을 재귀적으로 삭제합니다.
    *
-   * @param file 삭제할 디렉토리
+   * @param fileId 삭제할 디렉토리
+   * @param userId 삭제를 요청한 유저의 id
    */
   @Transactional
-  public void removeFilesRecursively(File file) {
-    traverseFilesRecursively(file, f -> {
-      fileUserDataRepository.deleteAllByFileId(f.getId());
-      fileRepository.delete(f);
-    });
+  public void deleteFile(UUID fileId, UUID userId) {
+    File file = fileRepository.findById(fileId)
+        .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+
+    if (file.getDirectory() == null) {
+      throw new IllegalArgumentException("Cannot delete root directory");
+    }
+
+    if (!hasAnyPermission(fileId, user.getId())) {
+      throw new IllegalArgumentException("User does not have permission to delete this file");
+    }
+
+    // TODO@ 문제는 해결되지만 더 좋은 방법이 있을 것 같습니다.
+    entityManager.clear();
+
+    fileRepository.delete(file);
   }
 
   /**
