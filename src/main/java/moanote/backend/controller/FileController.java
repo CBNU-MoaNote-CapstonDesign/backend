@@ -26,12 +26,16 @@ public class FileController {
   public ResponseEntity<List<FileDTO>> listFiles(@PathVariable(required = false) UUID fileId, @RequestParam(name = "user", required = true) UUID userId, @RequestParam(name = "recursive", defaultValue = "false") boolean recursive) {
 
     try {
-      if (fileId != null && !fileService.hasAnyPermission(fileId, userId)) {
-        return ResponseEntity.status(403).body(List.of());
-      }
-      return ResponseEntity.ok().body(fileService.getFilesByDirectory(fileId, recursive));
+      return ResponseEntity.ok().body(fileService.getFilesInDirectory(fileId, userId, recursive));
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).body(null);
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).body(null);
     } catch (Exception e) {
-      return ResponseEntity.status(404).body(List.of());
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).body(null);
     }
   }
 

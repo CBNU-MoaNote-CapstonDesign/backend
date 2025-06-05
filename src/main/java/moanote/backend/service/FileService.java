@@ -241,28 +241,39 @@ public class FileService {
   }
 
   /**
-   * 특정 directory 아래의 모든 파일을 불러옵니다
+   * 특정 directory 아래의 모든 파일을 불러옵니다. 요청한 directory 를 포함하여 반환합니다.
    *
-   * @param directoryId 디렉토리의 id
-   * @return 해당 디렉토리 아래의 모든 파일 리스트
+   * @param directoryId 디렉토리의 id null 이면 루트 디렉토리로 간주합니다.
+   * @return 해당 디렉토리 및 디렉토리 아래의 모든 파일 리스트
    */
   @Transactional
-  public List<FileDTO> getFilesByDirectory(UUID directoryId, boolean recursive) {
-    File directory = fileRepository.findFileById(directoryId).orElseThrow();
+  public List<FileDTO> getFilesInDirectory(UUID directoryId, UUID userId, boolean recursive) {
+    File directory;
 
-    if (directory.getType() != FileType.DIRECTORY) {
+    if (directoryId == null) {
+      directory = fileRepository.getRootDirectory(userId);
+    } else {
+      directory = fileRepository.findFileById(directoryId).orElseThrow();
+    }
+
+    if (directoryId != null && directory.getType() != FileType.DIRECTORY) {
       throw new IllegalArgumentException("Provided file is not a directory");
     }
 
+    if (directoryId != null && !hasAnyPermission(directory.getId(), userId)) {
+      throw new IllegalArgumentException("User does not have permission to access this directory");
+    }
+
     if (!recursive) {
-      return fileRepository.findFilesByDirectory(directory).stream()
-          .map(FileDTO::new)
-          .toList();
+      List<File> files = fileRepository.findFilesByDirectory(directory);
+      files.add(directory);
+      return files.stream().map(FileDTO::new).toList();
     }
 
     LinkedList<FileDTO> files = new LinkedList<>();
     Consumer<File> onVisit = file -> files.add(new FileDTO(file));
     traverseFilesRecursively(directory, onVisit);
+
     return files;
   }
 
