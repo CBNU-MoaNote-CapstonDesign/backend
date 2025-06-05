@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
 
 /**
  * <pre>
@@ -42,13 +43,15 @@ public class FileUserData {
   }
 
   @Id
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "file_id")
+  @OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
   private File file;
 
   @Id
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id")
+  @OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
   private UserData user;
 
   @Column(name = "permission", nullable = false)
