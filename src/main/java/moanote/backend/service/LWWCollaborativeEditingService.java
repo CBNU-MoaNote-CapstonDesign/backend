@@ -1,13 +1,13 @@
 package moanote.backend.service;
 
-import moanote.backend.domain.CollaborationSession;
-import moanote.backend.domain.CollaborationSession.Participation;
+import moanote.backend.domain.LWWCollaborationSession;
+import moanote.backend.domain.LWWCollaborationSession.Participation;
 import moanote.backend.domain.LWWNoteContent;
 import moanote.backend.domain.LWWRegister;
 import moanote.backend.dto.LWWStateDTO;
-import moanote.backend.entity.Note;
+import moanote.backend.entity.DiagramNoteSegment;
 import moanote.backend.entity.UserData;
-import moanote.backend.repository.NoteRepository;
+import moanote.backend.repository.DiagramNoteSegmentRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,31 +18,27 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Collaborative editing sessions 을 관리하는 서비스 클래스
- * TODO@ 실제로 DB 의 Note 내용을 변경하는 로직을 구현해야 함
- * TODO@ 세션이 종료되면 DB 에서 세션을 삭제하는 로직을 구현해야 함
+ * TODO@ 세션이 종료되면 세션을 삭제하는 로직을 구현해야 함
  */
 @Service
-public class CollaborativeEditingService {
+public class LWWCollaborativeEditingService {
 
-  final private Map<UUID, CollaborationSession> collaborationSessions;
+  final private Map<UUID, LWWCollaborationSession> collaborationSessions;
 
-  final private NoteService noteService;
-
-  final private NoteRepository noteRepository;
+  final private DiagramNoteSegmentRepository segmentRepository;
 
   final private UserDataRepository userDataRepository;
 
   @Autowired
-  public CollaborativeEditingService(NoteService noteService, NoteRepository noteRepository,
-      UserDataRepository userDataRepository) {
-    this.noteService = noteService;
-    this.noteRepository = noteRepository;
+  public LWWCollaborativeEditingService(DiagramNoteSegmentRepository segmentRepository,
+                                        UserDataRepository userDataRepository) {
+    this.segmentRepository = segmentRepository;
     this.collaborationSessions = new ConcurrentHashMap<>();
     this.userDataRepository = userDataRepository;
   }
 
   public List<Participation> getUsersInSession(UUID sessionId) {
-    CollaborationSession session = collaborationSessions.get(sessionId);
+    LWWCollaborationSession session = collaborationSessions.get(sessionId);
     if (session != null) {
       return session.getParticipants().values().stream().toList();
     }
@@ -56,38 +52,38 @@ public class CollaborativeEditingService {
    *   세션이 존재하지 않으면, 세션을 생성합니다. See Also 를 참조하세요.
    * </pre>
    *
-   * @param noteId            협업 대상 노트 ID
+   * @param segmentId         협업 대상 세그먼트 ID
    * @param participantUserId 세션 참여자
    * @return 세션 생성 후, LWWStateDTO 를 반환합니다.
-   * @see CollaborativeEditingService#doCreateSession(Note, UserData, UUID)
+   * @see LWWCollaborativeEditingService#doCreateSession(DiagramNoteSegment, UserData, UUID)
    */
   public LWWStateDTO<LWWNoteContent> participateSession(
-      UUID participantUserId, UUID noteId) {
-    Note note = noteService.getNoteById(noteId);
+      UUID participantUserId, UUID segmentId) {
+    DiagramNoteSegment segment = segmentRepository.getReferenceById(segmentId);
     UserData participant = userDataRepository.findById(participantUserId).orElseThrow();
 
-    return doParticipateSession(note, participant, noteId);
+    return doParticipateSession(segment, participant, segmentId);
   }
 
   /**
    * <pre>
    *   세션 참가 요청을 실제로 처리하는 메소드
-   *   세션 ID 는 Note ID 와 동일하게 간주합니다.
+   *   세션 ID 는 Segment ID 와 동일하게 간주합니다.
    *   세션이 존재하지 않으면, 세션을 생성합니다.
    * </pre>
    *
-   * @param note        협업 대상 노트
+   * @param segment     협업 대상 세그먼트
    * @param participant 협업 세션 참여자
    * @param sessionId   세션 ID
    * @return 협업 세션의 LWWStateDTO
    * @implNote participateSession() 와 분리한 이유는 다른 Service, Repository 와의 의존성을 기능에서 분리하기 위함입니다.
-   * @see CollaborativeEditingService#participateSession(UUID, UUID)
+   * @see LWWCollaborativeEditingService#participateSession(UUID, UUID)
    */
-  private LWWStateDTO<LWWNoteContent> doParticipateSession(Note note, UserData participant,
+  private LWWStateDTO<LWWNoteContent> doParticipateSession(DiagramNoteSegment segment, UserData participant,
       UUID sessionId) {
-    CollaborationSession session = collaborationSessions.get(sessionId);
+    LWWCollaborationSession session = collaborationSessions.get(sessionId);
     if (session == null) {
-      return doCreateSession(note, participant, sessionId).getLWWStateDTO();
+      return doCreateSession(segment, participant, sessionId).getLWWStateDTO();
     }
     session.addParticipant(participant);
     return session.getLWWStateDTO();
@@ -99,20 +95,20 @@ public class CollaborativeEditingService {
    *  Controller 에서 직접 이 메소드에 접근하는 대신, 세션 참가 요청을 통해서 접근합니다.
    * </pre>
    *
-   * @param note        동시 수정 대상 노트
+   * @param segment        동시 수정 대상 노트
    * @param participant 동시 수정 세션 참여자
    * @param sessionId   세션 ID
-   * @see CollaborativeEditingService#doParticipateSession(Note, UserData, UUID)
+   * @see LWWCollaborativeEditingService#doParticipateSession(DiagramNoteSegment, UserData, UUID)
    */
-  private CollaborationSession doCreateSession(Note note, UserData participant, UUID sessionId) {
-    CollaborationSession session = new CollaborationSession(note);
+  private LWWCollaborationSession doCreateSession(DiagramNoteSegment segment, UserData participant, UUID sessionId) {
+    LWWCollaborationSession session = new LWWCollaborationSession(segment);
     session.addParticipant(participant);
     collaborationSessions.put(sessionId, session);
     return session;
   }
 
-  public void editNote(LWWStateDTO<LWWNoteContent> lwwStateDTO, UUID sessionId) {
-    CollaborationSession session = collaborationSessions.get(sessionId);
+  public void editSegment(LWWStateDTO<LWWNoteContent> lwwStateDTO, UUID sessionId) {
+    LWWCollaborationSession session = collaborationSessions.get(sessionId);
     if (session == null) {
       throw new IllegalArgumentException("Session not found");
     }
@@ -123,6 +119,9 @@ public class CollaborativeEditingService {
       return;
     }
 
-    noteRepository.updateNote(session.noteId, lwwStateDTO.value().content());
+    DiagramNoteSegment segment = segmentRepository.getReferenceById(session.segmentId);
+    segment.setContent(lwwStateDTO.value().content());
+
+    segmentRepository.save(segment);
   }
 }

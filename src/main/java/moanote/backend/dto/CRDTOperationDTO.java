@@ -1,7 +1,7 @@
 package moanote.backend.dto;
 
 import jakarta.annotation.Nullable;
-import moanote.backend.domain.CRDTOrderTreeNode.Side;
+import moanote.backend.domain.CRDTFugueTreeNode.Side;
 
 /**
  * Represents a CRDT operation information.

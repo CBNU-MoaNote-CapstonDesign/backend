@@ -31,7 +31,7 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers("/api/**")
             .permitAll()
-            .anyRequest().authenticated()
+            .anyRequest().permitAll()
         )
         .formLogin(form -> form
             .loginPage("/login") // 커스텀 로그인 페이지
