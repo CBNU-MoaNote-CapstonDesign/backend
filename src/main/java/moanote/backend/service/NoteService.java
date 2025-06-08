@@ -1,15 +1,17 @@
 package moanote.backend.service;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import moanote.backend.entity.DiagramNoteSegment;
 import moanote.backend.entity.File;
+import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.repository.DiagramNoteSegmentRepository;
 import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
-import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,15 +29,18 @@ public class NoteService {
 
   private final FugueNodeRepository fugueNodeRepository;
 
+  private final EntityManager entityManager;
+
   @Autowired
   public NoteService(NoteRepository noteRepository,
       TextNoteSegmentRepository textNoteSegmentRepository,
       DiagramNoteSegmentRepository diagramNoteSegmentRepository,
-      FugueNodeRepository fugueNodeRepository) {
+      FugueNodeRepository fugueNodeRepository, EntityManager entityManager) {
     this.noteRepository = noteRepository;
     this.textNoteSegmentRepository = textNoteSegmentRepository;
     this.diagramNoteSegmentRepository = diagramNoteSegmentRepository;
     this.fugueNodeRepository = fugueNodeRepository;
+    this.entityManager = entityManager;
   }
 
   /**
@@ -58,17 +63,23 @@ public class NoteService {
     var segment = new TextNoteSegment();
     note.addSegment(segment);
 
-    var root = fugueNodeRepository.createRootNode(segment);
+    segment.setId(UuidCreator.getTimeOrderedEpoch());
+    FugueNode root = new FugueNode();
+    root.setSegment(segment);
     segment.setRootNode(root);
-    return textNoteSegmentRepository.create(segment);
+    root.setId("rt");
+    entityManager.persist(segment);
+    return segment;
   }
 
   @Transactional
   public DiagramNoteSegment createDiagramNoteSegment(UUID noteId) {
     var note = noteRepository.findNoteById(noteId).orElseThrow();
     var segment = new DiagramNoteSegment();
+    segment.setId(UuidCreator.getTimeOrderedEpoch());
+    segment.setContent("");
     note.addSegment(segment);
-    return diagramNoteSegmentRepository.create(segment);
+    return segment;
   }
 
   /**
