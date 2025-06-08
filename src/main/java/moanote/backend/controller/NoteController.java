@@ -1,32 +1,34 @@
 package moanote.backend.controller;
 
-import moanote.backend.entity.Note;
-import moanote.backend.service.NoteService;
-import org.springframework.beans.factory.annotation.Autowired;
+import moanote.backend.dto.AddSegmentDTO;
+import moanote.backend.dto.NoteDTO;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/notes")
 public class NoteController {
-//
-//  @Autowired
-//  private NoteService noteService;
-//
-//  @PostMapping("/create")
-//  public Note createNote(@RequestBody UUID creatorId) {
-//    return noteService.createNote(creatorId);
-//  }
-//
-//  @GetMapping("/user/{userId}")
-//  public List<Note> getNotesByUser(@PathVariable UUID userId) {
-//    return noteService.getNotesByUserId(userId);
-//  }
-//
-//  @GetMapping("/user/{userId}/owner")
-//  public List<Note> getNotesByOwner(@PathVariable UUID userId) {
-//    return noteService.getNotesByOwnerUserId(userId);
-//  }
+
+  @GetMapping("/metadata/{fileId}")
+  public ResponseEntity<NoteDTO> getNoteMetadata(@PathVariable("fileId") UUID fileId,
+      @RequestParam(name = "user") UUID userId) {
+    return ResponseEntity.status(404).build();
+    // return ResponseEntity.ok().body(null);
+  }
+
+  @PostMapping("/{fileId}/add/segment")
+  public ResponseEntity<NoteDTO> addSegment(@PathVariable("fileId") UUID fileId,
+      @RequestParam(name = "user") UUID userId, @RequestBody AddSegmentDTO addSegmentDTO) {
+    return ResponseEntity.status(404).build();
+    // return ResponseEntity.ok().body(null);
+  }
+
+  @PostMapping("/{fileId}/delete/segment")
+  public ResponseEntity<Void> deleteSegment(@PathVariable("fileId") UUID fileId,
+      @RequestParam(name = "user") UUID userId, @RequestParam(name = "segment") UUID segmentId) {
+    return ResponseEntity.status(404).build();
+    // return ResponseEntity.status(204).build();
+  }
 }
