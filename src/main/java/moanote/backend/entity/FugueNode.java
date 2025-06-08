@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import moanote.backend.domain.CRDTFugueTreeNode;
+import org.hibernate.annotations.OnDelete;
 
 /**
  * <pre>
@@ -30,14 +31,14 @@ public class FugueNode {
    * 루트 노드의 경우에 TextNoteSegment 의 rootNode 와 순환 참조 관계를 가집니다.
    */
   @Id
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "segment_id")
   private TextNoteSegment segment;
 
   /**
    * 루트 노드의 parent 는 null 입니다.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   @JoinColumns({
       @JoinColumn(name = "parent_id", referencedColumnName = "id"),
       @JoinColumn(name = "parent_segment_id", referencedColumnName = "segment_id")
