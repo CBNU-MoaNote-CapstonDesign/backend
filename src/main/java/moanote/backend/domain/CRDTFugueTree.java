@@ -34,7 +34,7 @@ public class CRDTFugueTree {
     nodes.put(root.getNodeId(), root);
   }
 
-  CRDTFugueTree(TextNoteSegment segment) {
+  public CRDTFugueTree(TextNoteSegment segment) {
     nodes = new ConcurrentHashMap<>();
     AtomicReference<CRDTFugueTreeNode> root = new AtomicReference<>(null);
     segment.getNodes().forEach(node -> {

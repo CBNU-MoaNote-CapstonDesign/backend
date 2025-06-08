@@ -4,9 +4,11 @@ import lombok.Getter;
 
 @Getter
 public enum SegmentType {
-  TEXT("text"), DIAGRAM("diagram");
-  private final String value;
-  SegmentType(String value) {
+  TEXT("text", 0), DIAGRAM("diagram", 1);
+  private final String name;
+  private final Integer value;
+  SegmentType(String name, Integer value) {
+    this.name = name;
     this.value = value;
   }
 }
