@@ -54,6 +54,6 @@ public class FugueNode {
   /**
    * null 이면 tombstone 노드입니다.
    */
-  @Column(name = "value")
+  @Column(name = "node_value", length = 32)
   private String value;
 }
