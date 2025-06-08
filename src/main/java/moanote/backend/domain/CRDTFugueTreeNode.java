@@ -1,6 +1,5 @@
 package moanote.backend.domain;
 
-import com.github.f4b6a3.uuid.util.UuidComparator;
 import lombok.Getter;
 import java.util.LinkedList;
 import java.util.Optional;
@@ -24,7 +23,7 @@ import java.util.UUID;
  * </pre>
  */
 @Getter
-public class CRDTOrderTreeNode {
+public class CRDTFugueTreeNode {
 
   public enum Side {
     LEFT, RIGHT
@@ -34,28 +33,28 @@ public class CRDTOrderTreeNode {
 
   private String value;
 
-  final private LinkedList<CRDTOrderTreeNode> leftChildren = new LinkedList<>();
+  final private LinkedList<CRDTFugueTreeNode> leftChildren = new LinkedList<>();
 
-  final private LinkedList<CRDTOrderTreeNode> rightChildren = new LinkedList<>();
+  final private LinkedList<CRDTFugueTreeNode> rightChildren = new LinkedList<>();
 
-  CRDTOrderTreeNode() {
+  CRDTFugueTreeNode() {
     nodeId = UUID.randomUUID().toString();
     value = null;
   }
 
-  CRDTOrderTreeNode(final String value) {
+  CRDTFugueTreeNode(final String value) {
     this.nodeId = UUID.randomUUID().toString();
     this.value = value;
   }
 
-  CRDTOrderTreeNode(final String nodeId, final String value) {
+  CRDTFugueTreeNode(final String nodeId, final String value) {
     this.nodeId = nodeId;
     this.value = value;
   }
 
-  public void addNode(Side side, CRDTOrderTreeNode node) {
-    LinkedList<CRDTOrderTreeNode> nodes = side == Side.LEFT ? leftChildren : rightChildren;
-    synchronized (nodes) {
+  public void addNode(Side side, CRDTFugueTreeNode node) {
+    LinkedList<CRDTFugueTreeNode> nodes = side == Side.LEFT ? leftChildren : rightChildren;
+    synchronized (side == Side.LEFT ? leftChildren : rightChildren) {
       int insertIndex = 0;
       while (insertIndex < nodes.size()
           && nodes.get(insertIndex).getNodeId().compareTo(node.getNodeId()) < 0) {

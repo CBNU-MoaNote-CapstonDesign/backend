@@ -31,14 +31,17 @@ public class FileService {
 
   private final FileUserDataRepository fileUserDataRepository;
 
+  private final NoteService noteService;
+
   private final EntityManager entityManager;
 
   @Autowired
   public FileService(FileRepository fileRepository, UserDataRepository userDataRepository,
-      FileUserDataRepository fileUserDataRepository, EntityManager entityManager) {
+      FileUserDataRepository fileUserDataRepository, NoteService noteService, EntityManager entityManager) {
     this.fileRepository = fileRepository;
     this.userDataRepository = userDataRepository;
     this.fileUserDataRepository = fileUserDataRepository;
+    this.noteService = noteService;
     this.entityManager = entityManager;
   }
 
@@ -58,6 +61,10 @@ public class FileService {
   protected File doCreateFile(UserData creator, String filename, FileType type, File directory) {
     File newFile = fileRepository.createFile(filename, type, directory);
     FileUserData permission = fileUserDataRepository.createFileUserData(creator, newFile, FileUserData.Permission.OWNER);
+
+    if (type == FileType.DOCUMENT) {
+      noteService.createNote(creator.getId(), newFile);
+    }
     return newFile;
   }
 

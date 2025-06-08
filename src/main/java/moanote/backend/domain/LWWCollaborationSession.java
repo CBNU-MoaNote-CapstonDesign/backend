@@ -2,7 +2,7 @@ package moanote.backend.domain;
 
 import lombok.Getter;
 import moanote.backend.dto.LWWStateDTO;
-import moanote.backend.entity.Note;
+import moanote.backend.entity.DiagramNoteSegment;
 import moanote.backend.entity.UserData;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -13,9 +13,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 동일한 노트를 동시 편집하는 사용자 목록과 편집 사항을 관리하는 클래스입니다.
+ * 동일한 데이터를 LWW 를 통해 동시 편집하는 사용자 목록과 편집 사항을 관리하는 클래스입니다.
+ * 지금은 다이어그램 동시 편집에 이용됩니다.
  */
-public class CollaborationSession {
+public class LWWCollaborationSession {
 
   @Getter
   public static class Participation {
@@ -43,12 +44,12 @@ public class CollaborationSession {
    */
   final private Map<UUID, Participation> participants;
 
-  final public UUID noteId;
+  final public UUID segmentId;
 
-  public CollaborationSession(Note note) {
-    this.lwwRegister = new LWWRegister<>("init", 0, new LWWNoteContent(note.getContent()));
+  public LWWCollaborationSession(DiagramNoteSegment segment) {
+    this.lwwRegister = new LWWRegister<>("init", 0, new LWWNoteContent(segment.getContent()));
     participants = new ConcurrentHashMap<>();
-    noteId = note.getId();
+    segmentId = segment.getId();
   }
 
   /**

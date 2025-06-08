@@ -40,23 +40,4 @@ class NoteRepositoryTest {
 
   @Autowired
   private UserService userService;
-
-  @Test
-  void findNotesByOwnerTest() {
-    UserData user = userService.createUser("testUser", "testPassword");
-    ArrayList<Note> notes = new ArrayList<>();
-    notes.add(noteService.createNote(user.getId()));
-    notes.add(noteService.createNote(user.getId()));
-    notes.add(noteService.createNote(user.getId()));
-
-    List<Note> foundNotes = noteRepository.findNotesByOwner(user.getId());
-
-    assertEquals(3, foundNotes.size());
-    notes.sort((o1, o2) -> UuidComparator.defaultCompare(o1.getId(), o2.getId()));
-    foundNotes.sort((o1, o2) -> UuidComparator.defaultCompare(o1.getId(), o2.getId()));
-    assertEquals(notes.get(0).getId(), foundNotes.get(0).getId());
-    assertEquals(notes.get(1).getId(), foundNotes.get(1).getId());
-    assertEquals(notes.get(2).getId(), foundNotes.get(2).getId());
-  }
-
 }

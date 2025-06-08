@@ -1,11 +1,12 @@
 package moanote.backend.controller;
 
 import moanote.backend.config.SecurityConfig;
+import moanote.backend.entity.File;
+import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.FileUserData.Permission;
 import moanote.backend.entity.Note;
-import moanote.backend.entity.NoteUserData;
 import moanote.backend.entity.UserData;
-import moanote.backend.repository.NoteUserDataRepository;
-import moanote.backend.service.NoteService;
+import moanote.backend.service.FileService;
 import moanote.backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,18 +21,15 @@ import java.util.ArrayList;
 @RequestMapping("/api/dev") // 엔드포인트 경로 정의
 public class TestController {
   @Autowired
-  NoteService noteService;
+  FileService fileService;
 
   @Autowired
   UserService userService;
 
   @Autowired
-  private NoteUserDataRepository noteUserDataRepository;
-
-  @Autowired
   private SecurityConfig securityConfig;
   private ArrayList<UserData> users = new ArrayList<>();
-  private ArrayList<Note> notes = new ArrayList<>();
+  private ArrayList<File> notes = new ArrayList<>();
 
   private final String AGENT_NAME;
 
@@ -54,11 +52,10 @@ public class TestController {
 
 
       for (int i = 0; i < users.size(); i++) {
-        notes.add(noteService.createNote(users.get(i).getId()));
-        noteService.updateNote(notes.get(i).getId(), "노트" + i);
+        notes.add(fileService.createFile(users.get(i).getId(), "노트" + i, FileType.DOCUMENT));
         for (int j = 0; j < users.size(); j++) {
           if (i != j) {
-            noteService.grantPermission(notes.get(i).getId(), users.get(j).getId(), NoteUserData.Permission.valueOf("WRITE"));
+            fileService.grantPermission(notes.get(i).getId(), users.get(j).getId(), Permission.valueOf("WRITE"));
           }
         }
       }
@@ -79,17 +76,7 @@ public class TestController {
    */
   @GetMapping("/cancelDB")
   public String cancelDB() {
-    try {
-      for (Note note : notes) {
-        noteService.delete(note);
-      }
-      for (UserData user : users) {
-        userService.delete(user);
-      }
-      return "<html><body><h1>테스트 데이터 삭제 완료</h1></body></html>";
-    } catch (Exception e) {
-      return "<html><body><h1>오류 발생</h1></body></html>";
-    }
+    return "<html><body><h1>삭제된 API 입니다.</h1></body></html>";
   }
 
   /**
@@ -99,15 +86,6 @@ public class TestController {
    */
   @GetMapping("/resetDB")
   public String resetDB() {
-    try {
-      // TODO textChatMessageRepository 구현시 delete 실시
-      // textChatMessageRepository.deleteAll();
-      noteUserDataRepository.deleteAll();
-      noteService.deleteAll();
-      userService.deleteAll();
-      return "<html><body><h1>DB 초기화 완료</h1></body></html>";
-    } catch (Exception e) {
-      return "<html><body><h1>오류 발생</h1></body></html>";
-    }
+    return "<html><body><h1>삭제된 API 입니다.</h1></body></html>";
   }
 }
