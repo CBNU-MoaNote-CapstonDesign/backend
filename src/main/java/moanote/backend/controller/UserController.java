@@ -22,9 +22,9 @@ public class UserController {
   private UserService userService;
 
   @PostMapping("/register")
-  public UserData registerUser(Map<String, String> userData) {
+  public UserDataDTO registerUser(Map<String, String> userData) {
     // TODO@ 적절한 DTO 객체를 받도록 변경
-    return userService.createUser(userData.get("username"), userData.get("password"));
+    return new UserDataDTO(userService.createUser(userData.get("username"), userData.get("password")));
   }
 
   /**
