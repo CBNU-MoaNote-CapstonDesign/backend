@@ -1,5 +1,6 @@
 package moanote.backend.dto;
 
+import moanote.backend.entity.UserData;
 import java.util.UUID;
 
 /**
@@ -12,4 +13,7 @@ import java.util.UUID;
  */
 public record UserDataDTO(UUID id, String name) {
 
+  public UserDataDTO(UserData user) {
+    this(user.getId(), user.getUsername());
+  }
 }

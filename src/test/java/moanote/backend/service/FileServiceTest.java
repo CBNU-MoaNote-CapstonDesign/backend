@@ -1,5 +1,7 @@
 package moanote.backend.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import moanote.backend.BackendApplication;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
@@ -14,7 +16,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.util.Assert;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +39,9 @@ class FileServiceTest {
   @Autowired
   private UserService userDataService;
 
+  @Autowired
+  private EntityManager entityManager;
+
   @Test
   void removeFilesRecursively() {
     UserData userData = userDataService.createUser("testuser", "testpassword");
@@ -45,7 +52,7 @@ class FileServiceTest {
 
     subFilesAtRoot.add(fileService.createFile(userData.getId(), "Doxyfile", FileType.DOCUMENT, rootDirectory.getId()));
     subFilesAtRoot.add(fileService.createFile(userData.getId(), "Makefile", FileType.DOCUMENT, rootDirectory.getId()));
-    subFilesAtRoot.add(fileService.createFile(userData.getId(), "Doxyfile", FileType.DOCUMENT, rootDirectory.getId()));
+    subFilesAtRoot.add(fileService.createFile(userData.getId(), "DockerFile", FileType.DOCUMENT, rootDirectory.getId()));
     subDirectory = fileService.createFile(userData.getId(), "src", FileType.DIRECTORY, rootDirectory.getId());
     subFilesAtRoot.add(subDirectory);
     subFilesAtSubDirectory.add(fileService.createFile(userData.getId(), "main.cpp", FileType.DOCUMENT, subDirectory.getId()));
@@ -59,13 +66,13 @@ class FileServiceTest {
 
     fileService.deleteFile(subDirectory.getId(), userData.getId());
     for (File file : subFilesAtSubDirectory) {
-      assertFalse(fileRepository.existsById(file.getId()), "File should be deleted: " + file.getName());
+      Assert.isTrue(!fileRepository.existsById(file.getId()), "File should be deleted: " + file.getName());
     }
     for (File file : subFilesAtRoot) {
       if (!file.equals(subDirectory)) {
-        assertTrue(fileRepository.existsById(file.getId()), "File should still exist: " + file.getName());
+        Assert.isTrue(fileRepository.existsById(file.getId()), "File should still exist: " + file.getName());
       } else {
-        assertFalse(fileRepository.existsById(file.getId()), "Subdirectory should be deleted: " + file.getName());
+        Assert.isTrue(!fileRepository.existsById(file.getId()), "Subdirectory should be deleted: " + file.getName());
       }
     }
   }

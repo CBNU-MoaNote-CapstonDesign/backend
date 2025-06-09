@@ -43,7 +43,7 @@ public class FileController {
   public ResponseEntity<FileDTO> fileMetadata(@PathVariable(required = false) UUID fileId, @RequestParam(name = "user", required = true) UUID userId) {
 
     try {
-      return ResponseEntity.ok().body(new FileDTO(fileService.getFileById(fileId, userId)));
+      return ResponseEntity.ok().body(fileService.getFileById(fileId, userId));
     } catch (NoSuchElementException e) {
       System.out.println(e.getMessage());
       return ResponseEntity.status(404).body(null);
@@ -73,11 +73,7 @@ public class FileController {
 
     FileDTO createdFile;
     try {
-      if (directoryId != null) {
-        createdFile = new FileDTO(fileService.createFile(userId, fileCreateDTO.name(), fileCreateDTO.type(), directoryId));
-      } else {
-        createdFile = new FileDTO(fileService.createFile(userId, fileCreateDTO.name(), fileCreateDTO.type()));
-      }
+      createdFile = fileService.createFile(directoryId, userId, fileCreateDTO);
       return ResponseEntity.status(201).body(createdFile);
     } catch (NoSuchElementException e) {
       System.out.println(e.getMessage());
@@ -94,7 +90,7 @@ public class FileController {
   @PostMapping("/edit/{fileId}")
   public ResponseEntity<FileDTO> editFile(@PathVariable UUID fileId, @RequestParam(name = "user") UUID userId, @RequestBody FileEditDTO fileEditDTO) {
     try {
-      return ResponseEntity.ok().body(new FileDTO(fileService.editFile(userId, fileId, fileEditDTO)));
+      return ResponseEntity.ok().body(fileService.editFile(userId, fileId, fileEditDTO));
     } catch (NoSuchElementException e) {
       System.out.println(e.getMessage());
       return ResponseEntity.status(404).body(null);

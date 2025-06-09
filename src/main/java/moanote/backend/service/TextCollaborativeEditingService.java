@@ -22,6 +22,7 @@ import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
+import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
@@ -45,11 +46,14 @@ public class TextCollaborativeEditingService {
 
   final private FugueNodeRepository fugueNodeRepository;
 
+  final private FileUserDataRepository fileUserDataRepository;
+
   @Autowired
   public TextCollaborativeEditingService(TextNoteSegmentRepository segmentRepository,
       UserDataRepository userDataRepository, NoteRepository noteRepository,
-      FugueNodeRepository fugueNodeRepository) {
+      FugueNodeRepository fugueNodeRepository, FileUserDataRepository fileUserDataRepository) {
     this.noteRepository = noteRepository;
+    this.fileUserDataRepository = fileUserDataRepository;
     this.collaborationSessions = new ConcurrentHashMap<>();
     this.segmentRepository = segmentRepository;
     this.userDataRepository = userDataRepository;
@@ -81,7 +85,8 @@ public class TextCollaborativeEditingService {
     Note note = noteRepository.getReferenceById(noteId);
     UserData participant = userDataRepository.findById(participantUserId).orElseThrow();
 
-    FileDTO fileDTO = new FileDTO(note.getFile());
+    FileDTO fileDTO = new FileDTO(note.getFile(),
+        fileUserDataRepository.findOwnerByFile(note.getFile()).getUser());
     Map<UUID, SegmentType> uuidSegmentTypeMap = new HashMap<>();
     note.getSegments().forEach(segment -> {
       if (segmentRepository.findById(segment.getId()).isPresent()) {
@@ -166,11 +171,11 @@ public class TextCollaborativeEditingService {
         throw new IllegalArgumentException();
       }
       node = new FugueNode();
-      node.setParent(
-          fugueNodeRepository.findBySegmentAndId(segment, operation.parentId()).orElseThrow());
+      var parent = fugueNodeRepository.findBySegmentAndId(segment, operation.parentId()).orElseThrow();
       node.setSide(operation.side());
       node.setValue(operation.value());
       node.setId(operation.nodeId());
+      parent.addChild(node);
       segment.addNode(node);
     } else {
       node = fugueNodeRepository.findById(operation.nodeId()).orElseThrow();
