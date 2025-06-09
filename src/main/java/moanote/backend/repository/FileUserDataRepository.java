@@ -1,10 +1,15 @@
 package moanote.backend.repository;
 
 import moanote.backend.entity.File;
+import moanote.backend.entity.FileUserData.Permission;
 import moanote.backend.entity.UserData;
 import moanote.backend.entity.FileUserData;
 import moanote.backend.entity.FileUserDataId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.web.bind.annotation.PathVariable;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,4 +30,13 @@ public interface FileUserDataRepository extends JpaRepository<FileUserData, File
   void deleteAllByFileId(UUID fileId);
 
   Optional<FileUserData> findByFileAndUser(File file, UserData user);
+
+  List<FileUserData> findByFile(File file);
+
+  @Query(value = """
+      SELECT fud
+      FROM FileUserData fud
+      WHERE fud.file = :file AND fud.permission = 'OWNER'
+      """)
+  FileUserData findOwnerByFile(@Param("file") File file);
 }

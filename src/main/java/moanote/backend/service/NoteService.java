@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import moanote.backend.entity.DiagramNoteSegment;
 import moanote.backend.entity.File;
+import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
@@ -52,23 +53,25 @@ public class NoteService {
    */
   @Transactional
   public Note createNote(UUID creatorId, File file) {
-    Note note = noteRepository.createNote(file);
-    file.linkNote(note);
-    return note;
+    if (file.getType() != FileType.DOCUMENT) {
+      throw new IllegalArgumentException("File type must be DOCUMENT");
+    }
+    return Note.create(file);
   }
 
   @Transactional
   public TextNoteSegment createTextNoteSegment(UUID noteId) {
     var note = noteRepository.findNoteById(noteId).orElseThrow();
     var segment = new TextNoteSegment();
-    note.addSegment(segment);
-
     segment.setId(UuidCreator.getTimeOrderedEpoch());
+    note.addSegment(segment);
+    entityManager.flush();
+
     FugueNode root = new FugueNode();
-    root.setSegment(segment);
-    segment.setRootNode(root);
     root.setId("rt");
-    entityManager.persist(segment);
+    root.setSegment(segment);
+    entityManager.persist(root);
+    segment.setRootNode(root);
     return segment;
   }
 

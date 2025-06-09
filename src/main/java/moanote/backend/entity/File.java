@@ -9,12 +9,15 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -82,11 +85,29 @@ public class File {
    */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "directory_id", nullable = true)
-  @OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
   private File directory;
 
-  @OneToOne(mappedBy = "file", cascade = CascadeType.ALL)
+  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  @JoinColumn(name = "note_id")
   private Note note;
+
+  @OneToMany(cascade = CascadeType.ALL, mappedBy = "directory", orphanRemoval = true)
+  private Set<File> children = new HashSet<>();
+
+  public void addChild(File file) {
+    file.setDirectory(this);
+    children.add(file);
+  }
+
+  public void removeChild(File file) {
+    if (!children.contains(file)) {
+      throw new IllegalArgumentException(
+          this.getId() + ":" + this.getName() + " is not actual parent directory of " + file.getId()
+              + ":" + file.getName());
+    }
+    file.setDirectory(null);
+    children.remove(file);
+  }
 
   public void linkNote(Note note) {
     note.setFile(this);

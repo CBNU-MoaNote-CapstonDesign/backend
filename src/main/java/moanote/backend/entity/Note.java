@@ -1,5 +1,6 @@
 package moanote.backend.entity;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,9 +31,7 @@ public class Note {
   @Column(name = "id")
   private UUID id;
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "file_id", nullable = false)
-  @MapsId
+  @OneToOne(mappedBy = "note")
   private File file;
 
   @OneToMany(mappedBy = "note", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
@@ -41,5 +40,12 @@ public class Note {
   public void addSegment(BaseNoteSegment segment) {
     segment.setNote(this);
     segments.add(segment);
+  }
+
+  public static Note create(File file) {
+    Note note = new Note();
+    note.setId(file.getId());
+    file.linkNote(note);
+    return note;
   }
 }

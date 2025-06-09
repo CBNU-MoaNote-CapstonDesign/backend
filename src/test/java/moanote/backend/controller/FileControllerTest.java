@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2, replace = AutoConfigureTestDatabase.Replace.ANY)
 @TestPropertySource("classpath:application.properties")
-@Transactional
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = BackendApplication.class)
@@ -76,9 +75,9 @@ class FileControllerTest {
       Assert.isTrue(response.hasBody(), "body should not be null");
       if (response.getBody() != null) {
         Assert.isTrue(response.getBody().size() == 2, "Other user's files should not be listed");
-        Assert.isTrue(response.getBody().contains(new FileDTO(otherUserFile)),
+        Assert.isTrue(response.getBody().contains(new FileDTO(otherUserFile, otherUser)),
             "Other user's files should be listed " + otherUserFile.getName());
-        Assert.isTrue(response.getBody().contains(new FileDTO(otherUserFile.getDirectory())),
+        Assert.isTrue(response.getBody().contains(new FileDTO(otherUserFile.getDirectory(), otherUser)),
             "Other user's files should be listed " + otherUserFile.getDirectory().getName());
       }
     }
@@ -89,12 +88,12 @@ class FileControllerTest {
         fail("Response body should not be null");
       }
       for (File file : files) {
-        if (!file.equals(rootDirectory) && !file.getDirectory().equals(rootDirectory)) {
-          Assert.isTrue(!response.getBody().contains(new FileDTO(file)),
+        if (!file.equals(rootDirectory) && !file.getDirectory().getId().equals(rootDirectory.getId())) {
+          Assert.isTrue(!response.getBody().contains(new FileDTO(file, user)),
               "File should not be listed: " + file.getName());
           continue;
         }
-        Assert.isTrue(response.getBody().contains(new FileDTO(file)),
+        Assert.isTrue(response.getBody().contains(new FileDTO(file, user)),
             "File should be listed: " + file.getName());
       }
     }
@@ -105,7 +104,7 @@ class FileControllerTest {
         fail("Response body should not be null");
       }
       for (File file : files) {
-        Assert.isTrue(response.getBody().contains(new FileDTO(file)),
+        Assert.isTrue(response.getBody().contains(new FileDTO(file, user)),
             "File should be listed: " + file.getName());
       }
     }
@@ -116,11 +115,11 @@ class FileControllerTest {
         fail("Response body should not be null");
       }
       for (File file : files) {
-        if (!file.equals(subdirectory) && (file.equals(rootDirectory) || file.getDirectory().equals(rootDirectory))) {
-          Assert.isTrue(!response.getBody().contains(new FileDTO(file)),
+        if (!file.getId().equals(subdirectory.getId()) && (file.getId().equals(rootDirectory.getId()) || file.getDirectory().getId().equals(rootDirectory.getId()))) {
+          Assert.isTrue(!response.getBody().contains(new FileDTO(file, user)),
               "File should not be listed: " + file.getName());
         } else {
-          Assert.isTrue(response.getBody().contains(new FileDTO(file)),
+          Assert.isTrue(response.getBody().contains(new FileDTO(file, user)),
               "File should be listed: " + file.getName());
         }
       }
@@ -140,6 +139,7 @@ class FileControllerTest {
   }
 
   @Test
+  @Transactional
   void fileMetadata() {
     UserData user = userService.createUser("testUser", "testPassword");
     UserData otherUser = userService.createUser("otherUser", "otherPassword");
@@ -150,7 +150,7 @@ class FileControllerTest {
       var response = fileController.fileMetadata(file.getId(), user.getId());
       Assert.isTrue(response.getStatusCode().is2xxSuccessful(),
           "Response should be successful for owner");
-      Assert.isTrue(response.getBody() != null && response.getBody().equals(new FileDTO(file)),
+      Assert.isTrue(response.getBody() != null && response.getBody().equals(new FileDTO(file, user)),
           "Response body should match the file");
     }
 
@@ -185,7 +185,7 @@ class FileControllerTest {
 
     {
       var files = fileService.getFilesByOwnerUserId(user.getId());
-      Assert.isTrue(files.size() == 1, "No files should not be left for the user");
+      Assert.isTrue(files.size() == 1, "No files should not be left for the user but " + (files.size() - 1) + " left (except for root)");
     }
 
     {

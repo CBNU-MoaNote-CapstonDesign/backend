@@ -2,6 +2,7 @@ package moanote.backend.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
 import moanote.backend.entity.File;
@@ -13,6 +14,9 @@ import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -65,6 +69,7 @@ public class FileService {
     if (type == FileType.DOCUMENT) {
       noteService.createNote(creator.getId(), newFile);
     }
+    directory.addChild(newFile);
     return newFile;
   }
 
@@ -105,6 +110,18 @@ public class FileService {
     UserData creator = userDataRepository.findById(creatorId)
         .orElseThrow(() -> new NoSuchElementException("User not found with id: " + creatorId));
     return doCreateFile(creator, filename, type, fileRepository.getRootDirectory(creator));
+  }
+
+  @Transactional
+  public FileDTO createFile(UUID directoryId, UUID userId, FileCreateDTO fileCreateDTO) {
+    UserData creator = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+    File file;
+    if (directoryId == null)
+      file = createFile(userId, fileCreateDTO.name(), fileCreateDTO.type());
+    else
+      file = createFile(userId, fileCreateDTO.name(), fileCreateDTO.type(), directoryId);
+    return new FileDTO(file, creator);
   }
 
   /**
@@ -163,11 +180,13 @@ public class FileService {
    * @return 찾아진 File entity 객체
    * @throws NoSuchElementException fileId 에 해당하는 객체를 찾을 수 없는 경우
    */
-  public File getFileById(UUID fileId, UUID userId) {
+  public FileDTO getFileById(UUID fileId, UUID userId) {
     if (!hasAnyPermission(fileId, userId)) {
       throw new IllegalArgumentException("User does not have permission to access this file");
     }
-    return fileRepository.findById(fileId).orElseThrow();
+
+    File file = fileRepository.findById(fileId).orElseThrow();
+    return new FileDTO(file, fileUserDataRepository.findOwnerByFile(file).getUser());
   }
 
   /**
@@ -294,11 +313,14 @@ public class FileService {
     if (!recursive) {
       List<File> files = fileRepository.findFilesByDirectory(directory);
       files.add(directory);
-      return files.stream().map(FileDTO::new).toList();
+      return files.stream()
+          .map(file -> new FileDTO(file, fileUserDataRepository.findOwnerByFile(file).getUser()))
+          .toList();
     }
 
     LinkedList<FileDTO> files = new LinkedList<>();
-    Consumer<File> onVisit = file -> files.add(new FileDTO(file));
+    Consumer<File> onVisit = file -> files.add(
+        new FileDTO(file, fileUserDataRepository.findOwnerByFile(file).getUser()));
     traverseFilesRecursively(directory, onVisit);
 
     return files;
@@ -326,9 +348,7 @@ public class FileService {
       throw new IllegalArgumentException("User does not have permission to delete this file");
     }
 
-    // TODO@ 문제는 해결되지만 더 좋은 방법이 있을 것 같습니다.
-    entityManager.clear();
-
+    file.getDirectory().removeChild(file);
     fileRepository.delete(file);
   }
 
@@ -367,7 +387,7 @@ public class FileService {
   }
 
   @Transactional
-  public File editFile(UUID userId, UUID fileId, FileEditDTO fileEditDTO) {
+  public FileDTO editFile(UUID userId, UUID fileId, FileEditDTO fileEditDTO) {
     File file = fileRepository.findById(fileId)
         .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
     UserData user = userDataRepository.findById(userId)
@@ -393,6 +413,8 @@ public class FileService {
       throw new IllegalArgumentException("User does not have permission to move this file to the specified directory");
     }
 
-    return fileRepository.save(file);
+    UserData owner = fileUserDataRepository.findOwnerByFile(file).getUser();
+    fileRepository.save(file);
+    return new FileDTO(file, owner);
   }
 }

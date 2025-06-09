@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import moanote.backend.domain.CRDTFugueTreeNode;
 import org.hibernate.annotations.OnDelete;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * <pre>
@@ -38,7 +40,7 @@ public class FugueNode {
   /**
    * 루트 노드의 parent 는 null 입니다.
    */
-  @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumns({
       @JoinColumn(name = "parent_id", referencedColumnName = "id"),
       @JoinColumn(name = "parent_segment_id", referencedColumnName = "segment_id")
@@ -57,4 +59,12 @@ public class FugueNode {
    */
   @Column(name = "node_value", length = 32)
   private String value;
+
+  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<FugueNode> children = new HashSet<>();
+
+  public void addChild(FugueNode node) {
+    node.setParent(this);
+    children.add(node);
+  }
 }
