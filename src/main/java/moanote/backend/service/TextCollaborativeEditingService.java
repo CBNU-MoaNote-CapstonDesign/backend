@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import jakarta.transaction.Transactional;
 import moanote.backend.domain.CRDTFugueTreeNode;
 import moanote.backend.domain.TextCollaborationSession;
 import moanote.backend.domain.TextCollaborationSession.Participation;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Service;
  * Collaborative editing sessions 을 관리하는 서비스 클래스
  */
 @Service
+@Transactional
 public class TextCollaborativeEditingService {
 
   final private Map<UUID, TextCollaborationSession> collaborationSessions;
