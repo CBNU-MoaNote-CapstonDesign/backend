@@ -4,6 +4,7 @@ package moanote.backend.controller;
 import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
+import moanote.backend.dto.ShareFileDTO;
 import moanote.backend.service.FileService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,7 +41,7 @@ public class FileController {
   }
 
   @GetMapping("/metadata/{fileId}")
-  public ResponseEntity<FileDTO> fileMetadata(@PathVariable(required = false) UUID fileId, @RequestParam(name = "user", required = true) UUID userId) {
+  public ResponseEntity<FileDTO> fileMetadata(@PathVariable UUID fileId, @RequestParam(name = "user", required = true) UUID userId) {
 
     try {
       return ResponseEntity.ok().body(fileService.getFileById(fileId, userId));
@@ -50,6 +51,16 @@ public class FileController {
     } catch (IllegalArgumentException e) {
       System.out.println(e.getMessage());
       return ResponseEntity.status(403).body(null);
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).body(null);
+    }
+  }
+
+  @GetMapping("/api/files/all/{userId}")
+  public ResponseEntity<List<FileDTO>> allFileAccessible(@PathVariable UUID userId) {
+    try {
+      return ResponseEntity.ok().body(fileService.getFileDTOByUserId(userId));
     } catch (Exception e) {
       System.out.println(e.getMessage());
       return ResponseEntity.status(500).body(null);
@@ -107,6 +118,24 @@ public class FileController {
   public ResponseEntity<Void> deleteFile(@PathVariable UUID fileId, @RequestParam(name = "user") UUID userId) {
     try {
       fileService.deleteFile(fileId, userId);
+      return ResponseEntity.noContent().build();
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).build();
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).build();
+    }
+  }
+
+  @PostMapping("/share/{fileId}")
+  public ResponseEntity<Void> shareFile(@PathVariable UUID fileId,
+      @RequestParam(name = "user") UUID userId, @RequestBody ShareFileDTO shareFileDTO) {
+    try {
+      fileService.shareFile(fileId, userId, shareFileDTO);
       return ResponseEntity.noContent().build();
     } catch (NoSuchElementException e) {
       System.out.println(e.getMessage());

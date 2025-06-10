@@ -1,7 +1,6 @@
 package moanote.backend.service;
 
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import moanote.backend.BackendApplication;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
@@ -18,10 +17,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.Assert;
 
-import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2, replace = AutoConfigureTestDatabase.Replace.ANY)
 @TestPropertySource("classpath:application.properties")
@@ -37,14 +33,15 @@ class FileServiceTest {
   private FileRepository fileRepository;
 
   @Autowired
-  private UserService userDataService;
+  private UserService userService;
 
   @Autowired
   private EntityManager entityManager;
 
+
   @Test
   void removeFilesRecursively() {
-    UserData userData = userDataService.createUser("testuser", "testpassword");
+    UserData userData = userService.createUser("testuser", "testpassword");
     File rootDirectory = fileRepository.getRootDirectory(userData);
     File subDirectory;
     ArrayList<File> subFilesAtRoot = new ArrayList<>();
