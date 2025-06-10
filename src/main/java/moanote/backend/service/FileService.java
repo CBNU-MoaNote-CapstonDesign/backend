@@ -2,6 +2,7 @@ package moanote.backend.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import moanote.backend.dto.CollaboratorDTO;
 import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
@@ -443,5 +444,18 @@ public class FileService {
     traverseFilesRecursively(file, (f) -> {
       grantPermission(f.getId(), targetUser.getId(), shareFileDTO.permission());
     });
+  }
+
+  @Transactional
+  public List<CollaboratorDTO> getCollaborators(UUID fileId, UUID requestUserId) {
+    File file = fileRepository.findFileById(fileId)
+        .orElseThrow(() -> new NoSuchElementException("File not found : " + fileId));
+    UserData requester = userDataRepository.findById(requestUserId)
+        .orElseThrow(() -> new NoSuchElementException("Requester not found : " + requestUserId));
+    if (!hasAnyPermission(fileId, requestUserId)) {
+      throw new IllegalArgumentException(
+          "Requester has no permission : user=" + requestUserId + " file=" + fileId);
+    }
+    return fileUserDataRepository.findByFile(file).stream().map(CollaboratorDTO::new).toList();
   }
 }

@@ -1,6 +1,7 @@
 package moanote.backend.controller;
 
 
+import moanote.backend.dto.CollaboratorDTO;
 import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
@@ -137,6 +138,23 @@ public class FileController {
     try {
       fileService.shareFile(fileId, userId, shareFileDTO);
       return ResponseEntity.noContent().build();
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).build();
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).build();
+    }
+  }
+
+  @GetMapping("/collaborators/{fileId}")
+  public ResponseEntity<List<CollaboratorDTO>> getCollaborators(@PathVariable UUID fileId,
+      @RequestParam(name = "user") UUID userId) {
+    try {
+      return ResponseEntity.ok().body(fileService.getCollaborators(fileId, userId));
     } catch (NoSuchElementException e) {
       System.out.println(e.getMessage());
       return ResponseEntity.status(404).build();
