@@ -3,19 +3,31 @@ package moanote.backend.service;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import moanote.backend.dto.AddSegmentDTO;
+import moanote.backend.dto.FileDTO;
+import moanote.backend.dto.NoteDTO;
+import moanote.backend.dto.SegmentType;
 import moanote.backend.entity.DiagramNoteSegment;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.FileUserData;
 import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
+import moanote.backend.entity.UserData;
 import moanote.backend.repository.DiagramNoteSegmentRepository;
+import moanote.backend.repository.FileRepository;
+import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
+import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -32,16 +44,27 @@ public class NoteService {
 
   private final EntityManager entityManager;
 
+  private final UserDataRepository userDataRepository;
+
+  private final FileRepository fileRepository;
+
+  private final FileUserDataRepository fileUserDataRepository;
+
   @Autowired
   public NoteService(NoteRepository noteRepository,
       TextNoteSegmentRepository textNoteSegmentRepository,
       DiagramNoteSegmentRepository diagramNoteSegmentRepository,
-      FugueNodeRepository fugueNodeRepository, EntityManager entityManager) {
+      FugueNodeRepository fugueNodeRepository, EntityManager entityManager,
+      UserDataRepository userDataRepository, FileRepository fileRepository,
+      FileUserDataRepository fileUserDataRepository, FileUserDataRepository fileUserDataRepository1) {
     this.noteRepository = noteRepository;
     this.textNoteSegmentRepository = textNoteSegmentRepository;
     this.diagramNoteSegmentRepository = diagramNoteSegmentRepository;
     this.fugueNodeRepository = fugueNodeRepository;
     this.entityManager = entityManager;
+    this.userDataRepository = userDataRepository;
+    this.fileRepository = fileRepository;
+    this.fileUserDataRepository = fileUserDataRepository1;
   }
 
   /**
@@ -57,6 +80,20 @@ public class NoteService {
       throw new IllegalArgumentException("File type must be DOCUMENT");
     }
     return Note.create(file);
+  }
+
+  @Transactional
+  public NoteDTO createSegment(UUID noteId, UUID userId, AddSegmentDTO addSegmentDTO) {
+    Note note = noteRepository.findById(noteId).orElseThrow();
+    UserData userData = userDataRepository.findById(userId).orElseThrow();
+
+    if (addSegmentDTO.type() == SegmentType.TEXT) {
+      createTextNoteSegment(noteId);
+    } else {
+      createDiagramNoteSegment(noteId);
+    }
+
+    return getNoteMetadata(noteId, userId);
   }
 
   @Transactional
@@ -83,6 +120,22 @@ public class NoteService {
     segment.setContent("");
     note.addSegment(segment);
     return segment;
+  }
+
+  @Transactional
+  public NoteDTO getNoteMetadata(UUID noteId, UUID userId) {
+    Note note = noteRepository.findById(noteId).orElseThrow();
+    UserData userData = userDataRepository.findById(userId).orElseThrow();
+
+    List<TextNoteSegment> textSegments = textNoteSegmentRepository.findAllByNote(note);
+    List<DiagramNoteSegment> diagramSegments = diagramNoteSegmentRepository.findAllByNote(note);
+    Map<UUID, SegmentType> segments = new HashMap<>();
+    textSegments.forEach(segment -> segments.put(segment.getId(), SegmentType.TEXT));
+    diagramSegments.forEach(segment -> segments.put(segment.getId(), SegmentType.DIAGRAM));
+    return new NoteDTO(
+        new FileDTO(note.getFile(), fileUserDataRepository.findOwnerByFile(note.getFile()).getUser()),
+        segments
+    );
   }
 
   /**
