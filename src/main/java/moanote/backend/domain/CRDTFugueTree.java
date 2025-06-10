@@ -1,5 +1,6 @@
 package moanote.backend.domain;
 
+import moanote.backend.domain.CRDTFugueTreeNode.Side;
 import moanote.backend.dto.CRDTOperationDTO;
 import moanote.backend.dto.FugueNodeDTO;
 import moanote.backend.entity.TextNoteSegment;
@@ -128,19 +129,19 @@ public class CRDTFugueTree {
   public List<FugueNodeDTO> getNodesDTO() {
     List<FugueNodeDTO> fugueNodeDTOList = new LinkedList<>();
     Queue<CRDTFugueTreeNode> visitQueue = new LinkedList<>();
-    fugueNodeDTOList.add(new FugueNodeDTO(root.getNodeId(), null, root.getValue()));
+    fugueNodeDTOList.add(new FugueNodeDTO(root.getNodeId(), null, root.getValue(), null));
     visitQueue.add(root);
 
     while (!visitQueue.isEmpty()) {
       var node = visitQueue.poll();
       node.getLeftChildren().forEach(nextNode -> {
         fugueNodeDTOList.add(
-            new FugueNodeDTO(nextNode.getNodeId(), node.getNodeId(), nextNode.getValue()));
+            new FugueNodeDTO(nextNode.getNodeId(), node.getNodeId(), nextNode.getValue(), Side.LEFT));
         visitQueue.add(nextNode);
       });
       node.getRightChildren().forEach(nextNode -> {
         fugueNodeDTOList.add(
-            new FugueNodeDTO(nextNode.getNodeId(), node.getNodeId(), nextNode.getValue()));
+            new FugueNodeDTO(nextNode.getNodeId(), node.getNodeId(), nextNode.getValue(), Side.RIGHT));
         visitQueue.add(nextNode);
       });
     }
