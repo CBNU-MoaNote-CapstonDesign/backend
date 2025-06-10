@@ -1,5 +1,6 @@
 package moanote.backend.service;
 
+import jakarta.transaction.Transactional;
 import moanote.backend.domain.LWWCollaborationSession;
 import moanote.backend.domain.LWWCollaborationSession.Participation;
 import moanote.backend.domain.LWWNoteContent;
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Collaborative editing sessions 을 관리하는 서비스 클래스
  * TODO@ 세션이 종료되면 세션을 삭제하는 로직을 구현해야 함
  */
+@Transactional
 @Service
 public class LWWCollaborativeEditingService {
 
@@ -79,7 +81,7 @@ public class LWWCollaborativeEditingService {
    * @implNote participateSession() 와 분리한 이유는 다른 Service, Repository 와의 의존성을 기능에서 분리하기 위함입니다.
    * @see LWWCollaborativeEditingService#participateSession(UUID, UUID)
    */
-  private LWWStateDTO<LWWNoteContent> doParticipateSession(DiagramNoteSegment segment, UserData participant,
+  protected LWWStateDTO<LWWNoteContent> doParticipateSession(DiagramNoteSegment segment, UserData participant,
       UUID sessionId) {
     LWWCollaborationSession session = collaborationSessions.get(sessionId);
     if (session == null) {
@@ -100,7 +102,7 @@ public class LWWCollaborativeEditingService {
    * @param sessionId   세션 ID
    * @see LWWCollaborativeEditingService#doParticipateSession(DiagramNoteSegment, UserData, UUID)
    */
-  private LWWCollaborationSession doCreateSession(DiagramNoteSegment segment, UserData participant, UUID sessionId) {
+  protected LWWCollaborationSession doCreateSession(DiagramNoteSegment segment, UserData participant, UUID sessionId) {
     LWWCollaborationSession session = new LWWCollaborationSession(segment);
     session.addParticipant(participant);
     collaborationSessions.put(sessionId, session);
