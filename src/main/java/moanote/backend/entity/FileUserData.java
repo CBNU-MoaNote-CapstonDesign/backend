@@ -30,15 +30,17 @@ public class FileUserData {
    */
   @Getter
   public enum Permission {
-    READ("READ"),
-    WRITE("WRITE"),
-    DELETE("DELETE"),
-    OWNER("OWNER");
+    READ("READ", 0),
+    WRITE("WRITE", 1),
+    DELETE("DELETE", 2),
+    OWNER("OWNER", 3);
 
     private final String permission;
+    private final int value;
 
-    Permission(String permission) {
+    Permission(String permission, int value) {
       this.permission = permission;
+      this.value = value;
     }
   }
 
