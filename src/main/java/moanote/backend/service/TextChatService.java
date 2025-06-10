@@ -42,8 +42,8 @@ public class TextChatService {
     String messageContent = message.messageContent();
 
     // TODO@ Authority 기능 구현 후 이를 통한 user id 확인 및 username 불러오기
-    String senderId = message.senderId();
-    String senderName = message.senderId();
+    UUID senderId = message.senderId();
+    String senderName = userDataRepository.findById(UUID.fromString(message.senderId())).orElseThrow().getUsername();
     String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
         .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     String chatId = UuidCreator.getTimeOrderedEpoch().toString();
