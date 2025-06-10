@@ -58,7 +58,7 @@ public class FileController {
     }
   }
 
-  @GetMapping("/api/files/all/{userId}")
+  @GetMapping("/all/{userId}")
   public ResponseEntity<List<FileDTO>> allFileAccessible(@PathVariable UUID userId) {
     try {
       return ResponseEntity.ok().body(fileService.getFileDTOByUserId(userId));
