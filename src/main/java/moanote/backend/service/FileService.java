@@ -5,9 +5,11 @@ import jakarta.transaction.Transactional;
 import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
+import moanote.backend.dto.ShareFileDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
+import moanote.backend.entity.FileUserData.Permission;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.FileUserDataRepository;
@@ -236,6 +238,13 @@ public class FileService {
     return fileRepository.findFilesByUser(user);
   }
 
+  public List<FileDTO> getFileDTOByUserId(UUID userId) {
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+    return fileRepository.findFilesByUser(user).stream().map(file ->
+        new FileDTO(file, fileUserDataRepository.findOwnerByFile(file).getUser())).toList();
+  }
+
   /**
    * <pre>
    * 파일을 재귀적으로 탐색합니다. 만약 파일이 디렉토리인 경우 하위 파일들을 모두 재귀적으로 탐색하는데, 후위 순회로 탐색합니다.
@@ -416,5 +425,23 @@ public class FileService {
     UserData owner = fileUserDataRepository.findOwnerByFile(file).getUser();
     fileRepository.save(file);
     return new FileDTO(file, owner);
+  }
+
+  @Transactional
+  public void shareFile(UUID fileId, UUID userId, ShareFileDTO shareFileDTO) {
+    File file = fileRepository.findFileById(fileId)
+        .orElseThrow(() -> new NoSuchElementException("File not found : " + fileId));
+    UserData requester = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("Requester not found : " + userId));
+    if (!hasPermission(fileId, userId, Permission.OWNER)) {
+      throw new IllegalArgumentException(
+          "Requester is not owner : user=" + userId + " file=" + fileId);
+    }
+    UserData targetUser = userDataRepository.findByUsername(shareFileDTO.username())
+        .orElseThrow(() -> new NoSuchElementException("Target user not found : " + shareFileDTO.username()));
+
+    traverseFilesRecursively(file, (f) -> {
+      grantPermission(f.getId(), targetUser.getId(), shareFileDTO.permission());
+    });
   }
 }

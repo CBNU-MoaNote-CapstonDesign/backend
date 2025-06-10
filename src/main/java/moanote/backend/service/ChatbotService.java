@@ -47,7 +47,7 @@ public class ChatbotService {
     this.AGENT_NAME = AGENT_NAME;
     UUID uuid;
     try {
-      uuid = userDataRepository.findByUsername(AGENT_NAME).getId();
+      uuid = userDataRepository.findByUsername(AGENT_NAME).orElseThrow().getId();
     } catch (Exception e) {
       UserData agent = userService.createUser(AGENT_NAME, "1234");;
       uuid = agent.getId();

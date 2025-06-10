@@ -36,7 +36,7 @@ public class UserService {
   }
 
   public UserData findByUsername(String username) {
-    return userDataRepository.findByUsername(username);
+    return userDataRepository.findByUsername(username).orElseThrow();
   }
 
   public Optional<UserData> findById(UUID id) {
