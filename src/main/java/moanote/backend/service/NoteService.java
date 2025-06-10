@@ -83,17 +83,15 @@ public class NoteService {
   }
 
   @Transactional
-  public NoteDTO createSegment(UUID noteId, UUID userId, AddSegmentDTO addSegmentDTO) {
+  public UUID createSegment(UUID noteId, UUID userId, AddSegmentDTO addSegmentDTO) {
     Note note = noteRepository.findById(noteId).orElseThrow();
     UserData userData = userDataRepository.findById(userId).orElseThrow();
 
     if (addSegmentDTO.type() == SegmentType.TEXT) {
-      createTextNoteSegment(noteId);
+      return createTextNoteSegment(noteId).getId();
     } else {
-      createDiagramNoteSegment(noteId);
+      return createDiagramNoteSegment(noteId).getId();
     }
-
-    return getNoteMetadata(noteId, userId);
   }
 
   @Transactional

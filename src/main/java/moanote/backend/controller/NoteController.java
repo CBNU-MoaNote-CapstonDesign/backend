@@ -2,11 +2,13 @@ package moanote.backend.controller;
 
 import moanote.backend.dto.AddSegmentDTO;
 import moanote.backend.dto.NoteDTO;
+import moanote.backend.dto.SegmentType;
 import moanote.backend.service.NoteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -39,7 +41,7 @@ public class NoteController {
   }
 
   @PostMapping("/{fileId}/add/segment")
-  public ResponseEntity<NoteDTO> addSegment(@PathVariable("fileId") UUID fileId,
+  public ResponseEntity<UUID> addSegment(@PathVariable("fileId") UUID fileId,
       @RequestParam(name = "user") UUID userId, @RequestBody AddSegmentDTO addSegmentDTO) {
     try {
       return ResponseEntity.ok().body(noteService.createSegment(fileId, userId, addSegmentDTO));
