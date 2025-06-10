@@ -23,6 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -229,9 +230,30 @@ class FileControllerTest {
       ArrayList<File> filesFromSubdirectory = new ArrayList<>();
       fileService.traverseFilesRecursively(subdirectory, filesFromSubdirectory::add);
       for (File file : filesFromSubdirectory) {
-        Assert.isTrue(allFilesReachable.stream().filter(f -> f.getId().equals(file.getId())).findFirst().isPresent(),
+        Assert.isTrue(allFilesReachable.stream().anyMatch(f -> f.getId().equals(file.getId())),
             "Should be reachable by otherUser file : " + file.getName());
       }
+    }
+  }
+
+  @Test
+  void getCollaborators() {
+    ArrayList<UserData> users = new ArrayList<>();
+    UserData user = userService.createUser("testUser", "testPassword");
+    File file = fileService.createFile(user.getId(), "file", FileType.DOCUMENT);
+    users.add(user);
+    for (int i = 1; i <= 10; i++) {
+      UserData newUser = userService.createUser("testUser" + i, "testPassword" + i);
+      ShareFileDTO shareFileDTO = new ShareFileDTO(newUser.getUsername(), FileUserData.Permission.WRITE);
+      fileController.shareFile(file.getId(), user.getId(), shareFileDTO);
+    }
+
+    var response = fileController.getCollaborators(file.getId(), user.getId());
+    Assert.isTrue(response.hasBody(), "Response body must not be null");
+    var collaborators = Objects.requireNonNull(response.getBody());
+    for (var collab : users) {
+      Assert.isTrue(collaborators.stream().anyMatch(u -> u.user().id().equals(collab.getId())),
+          "must be found in collab the user : " + collab.getUsername());
     }
   }
 }
