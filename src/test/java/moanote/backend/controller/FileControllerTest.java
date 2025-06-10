@@ -3,6 +3,7 @@ package moanote.backend.controller;
 import jakarta.transaction.Transactional;
 import moanote.backend.BackendApplication;
 import moanote.backend.dto.FileDTO;
+import moanote.backend.dto.ShareFileDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
@@ -22,6 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -191,6 +193,45 @@ class FileControllerTest {
     {
       var files = fileService.getFilesByUserId(otherUser.getId());
       Assert.isTrue(files.size() == 1, "No files should not be left for the user");
+    }
+  }
+
+  @Test
+  void shareFile() {
+    UserData user = userService.createUser("testUser", "testPassword");
+    UserData otherUser = userService.createUser("otherUser", "otherPassword");
+
+    ArrayList<File> files = new ArrayList<>();
+    File subdirectory = fileService.createFile(user.getId(), "subdirectory", FileType.DIRECTORY);
+    File subSubdirectory = fileService.createFile(user.getId(), "subSubdirectory",
+        FileType.DIRECTORY, subdirectory.getId());
+    File rootDirectory = subdirectory.getDirectory();
+    files.add(rootDirectory);
+    files.add(subdirectory);
+    files.add(subSubdirectory);
+    files.add(fileService.createFile(user.getId(), "file1.txt", FileType.DOCUMENT));
+    files.add(fileService.createFile(user.getId(), "file2.txt", FileType.DOCUMENT));
+    files.add(fileService.createFile(user.getId(), "file3.txt", FileType.DOCUMENT));
+    files.add(
+        fileService.createFile(user.getId(), "file4.txt", FileType.DOCUMENT, subdirectory.getId()));
+    files.add(
+        fileService.createFile(user.getId(), "file5.txt", FileType.DOCUMENT, subdirectory.getId()));
+    files.add(fileService.createFile(user.getId(), "file6.txt", FileType.DOCUMENT,
+        subSubdirectory.getId()));
+
+    ShareFileDTO shareFileDTO = new ShareFileDTO(otherUser.getUsername(), FileUserData.Permission.WRITE);
+
+    {
+      var response = fileController.shareFile(subdirectory.getId(), user.getId(), shareFileDTO);
+      Assert.isTrue(response.getStatusCode().is2xxSuccessful(), "Response must be successful");
+      var allFilesReachable = fileService.getFilesByUserId(otherUser.getId());
+
+      ArrayList<File> filesFromSubdirectory = new ArrayList<>();
+      fileService.traverseFilesRecursively(subdirectory, filesFromSubdirectory::add);
+      for (File file : filesFromSubdirectory) {
+        Assert.isTrue(allFilesReachable.stream().filter(f -> f.getId().equals(file.getId())).findFirst().isPresent(),
+            "Should be reachable by otherUser file : " + file.getName());
+      }
     }
   }
 }
