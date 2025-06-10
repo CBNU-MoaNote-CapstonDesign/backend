@@ -87,7 +87,7 @@ public class CollaborativeEditingController {
   }
 
   @MessageMapping("/docs/text/edit/{noteId}/{segmentId}")
-  @SendTo("/topic/docs/{noteId}/{segmentId}")
+  @SendTo("/topic/docs/text/{noteId}/{segmentId}")
   public List<CRDTOperationDTO> editingDocs(List<CRDTOperationDTO> editOperations,
       @DestinationVariable("segmentId") UUID segmentId,
       @DestinationVariable("noteId") UUID noteId) {
