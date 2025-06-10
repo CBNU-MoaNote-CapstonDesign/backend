@@ -65,9 +65,9 @@ public class ChatbotService {
     String messageType = "bot";
     String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
         .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-    String chatId = UuidCreator.getTimeOrderedEpoch().toString();
+    UUID chatId = UuidCreator.getTimeOrderedEpoch();
 
-    return new UserChatMessageBroadcastDTO(messageType, AGENT_UUID.toString(), AGENT_NAME, date,
+    return new UserChatMessageBroadcastDTO(messageType, AGENT_UUID, AGENT_NAME, date,
         content, chatId);
   }
 

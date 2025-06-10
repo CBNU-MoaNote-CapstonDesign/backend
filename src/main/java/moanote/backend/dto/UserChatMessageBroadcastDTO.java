@@ -1,5 +1,7 @@
 package moanote.backend.dto;
 
+import java.util.UUID;
+
 /**
  * <pre>
  *   유저가 보낸 채팅 메시지를 가공하여 전파할 때 사용하는 DTO
@@ -14,7 +16,7 @@ package moanote.backend.dto;
  * @param messageContent 메시지 내용
  * @param chatId 채팅 객체 ID (UUIDv7)
  */
-public record UserChatMessageBroadcastDTO(String messageType, String senderId, String senderName,
-                                          String date, String messageContent, String chatId) {
+public record UserChatMessageBroadcastDTO(String messageType, UUID senderId, String senderName,
+                                          String date, String messageContent, UUID chatId) {
 
 }

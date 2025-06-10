@@ -1,5 +1,7 @@
 package moanote.backend.dto;
 
+import java.util.UUID;
+
 /**
  * <pre>
  *   UserChatSendDTO
@@ -9,6 +11,6 @@ package moanote.backend.dto;
  * @param senderId 보낸 사람의 ID
  * @param messageContent 메시지 내용
  */
-public record UserChatSendDTO(String messageType, String senderId, String messageContent) {
+public record UserChatSendDTO(String messageType, UUID senderId, String messageContent) {
 
 }
