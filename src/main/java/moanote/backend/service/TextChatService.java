@@ -3,10 +3,13 @@ package moanote.backend.service;
 import com.github.f4b6a3.uuid.UuidCreator;
 import moanote.backend.dto.UserChatMessageBroadcastDTO;
 import moanote.backend.dto.UserChatSendDTO;
+import moanote.backend.repository.UserDataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 
 /**
@@ -16,6 +19,13 @@ import java.time.format.DateTimeFormatter;
  */
 @Service
 public class TextChatService {
+
+  private final UserDataRepository userDataRepository;
+
+  @Autowired
+  public TextChatService(UserDataRepository userDataRepository) {
+    this.userDataRepository = userDataRepository;
+  }
 
   /**
    * <pre>
@@ -43,10 +53,10 @@ public class TextChatService {
 
     // TODO@ Authority 기능 구현 후 이를 통한 user id 확인 및 username 불러오기
     UUID senderId = message.senderId();
-    String senderName = userDataRepository.findById(UUID.fromString(message.senderId())).orElseThrow().getUsername();
+    String senderName = userDataRepository.findById(message.senderId()).orElseThrow().getUsername();
     String date = LocalDateTime.now().atZone(ZoneId.systemDefault())
         .withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-    String chatId = UuidCreator.getTimeOrderedEpoch().toString();
+    UUID chatId = UuidCreator.getTimeOrderedEpoch();
     return new UserChatMessageBroadcastDTO(message.messageType(), senderId, senderName, date, messageContent,
         chatId);
   }
