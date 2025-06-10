@@ -3,22 +3,134 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>로그인</title>
+    <title>로그인 | 모아노트</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f0f8fe 0%, #e0e7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+        }
+        .moa-shadow {
+            box-shadow: 0 8px 32px 0 rgba(24, 99, 112, 0.10), 0 1.5px 4px 0 rgba(24, 99, 112, 0.08);
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border-radius: 1.25rem;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .moa-logo-anim {
+            width: 4rem;
+            height: 4rem;
+            margin-bottom: 1rem;
+            animation: logo-bounce 1.2s cubic-bezier(.68,-0.55,.27,1.55);
+        }
+        @keyframes logo-bounce {
+            0% { transform: scale(0.8) rotate(-10deg);}
+            60% { transform: scale(1.1) rotate(8deg);}
+            100% { transform: scale(1) rotate(0);}
+        }
+        .moa-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #186370;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+            user-select: none;
+        }
+        .moa-desc {
+            font-size: 1.125rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+            user-select: none;
+        }
+        .moa-label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #186370;
+            margin-bottom: 0.25rem;
+            letter-spacing: 0.01em;
+        }
+        .moa-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #b6d6f2;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            transition: border 0.2s, box-shadow 0.2s;
+            outline: none;
+            margin-bottom: 0.5rem;
+            box-sizing: border-box;
+        }
+        .moa-input:focus {
+            border-color: #186370;
+            box-shadow: 0 0 0 2px #18637033;
+        }
+        .moa-btn {
+            margin-top: 1rem;
+            background: linear-gradient(90deg, #186370 60%, #1e7a8a 100%);
+            color: #fff;
+            padding: 0.75rem 2.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 9999px;
+            box-shadow: 0 4px 16px 0 rgba(24,99,112,0.10);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+        .moa-btn:hover {
+            background: linear-gradient(90deg, #1e7a8a 60%, #186370 100%);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px 0 #18637022;
+        }
+        .moa-error {
+            color: #ef4444;
+            text-align: center;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+        @media (max-width: 500px) {
+            .login-container {
+                padding: 1.25rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>로그인</h2>
-    <form method="post" action="/login">
-        <label for="username">아이디:</label>
-        <input type="text" name="username" id="username" />
-        <br/>
-        <label for="password">비밀번호:</label>
-        <input type="password" name="password" id="password" />
-        <br/>
-        <button type="submit">로그인</button>
-    </form>
-
-    <div th:if="${param.error}">
-        <p style="color:red;">아이디 또는 비밀번호가 잘못되었습니다.</p>
+    <div class="login-container moa-shadow">
+        <img src="logo1.png" alt="모아노트 로고" />
+        <h2 class="moa-title">모아노트</h2>
+        <p class="moa-desc">세상의 모든 아이디어를 모아</p>
+        <form method="post" action="/login" style="width:100%;display:flex;flex-direction:column;gap:1.25rem;">
+            <div>
+                <label for="username" class="moa-label">아이디</label>
+                <input type="text" name="username" id="username"
+                       class="moa-input"
+                       placeholder="아이디를 입력하세요" required autocomplete="username" />
+            </div>
+            <div>
+                <label for="password" class="moa-label">비밀번호</label>
+                <input type="password" name="password" id="password"
+                       class="moa-input"
+                       placeholder="비밀번호를 입력하세요" required autocomplete="current-password" />
+            </div>
+            <button type="submit" class="moa-btn">로그인</button>
+        </form>
+        <div th:if="${param.error}" class="moa-error">
+            아이디 또는 비밀번호가 잘못되었습니다.
+        </div>
     </div>
 </body>
 </html>
