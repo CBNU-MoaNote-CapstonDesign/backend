@@ -35,7 +35,6 @@ import org.springframework.stereotype.Service;
  * Collaborative editing sessions 을 관리하는 서비스 클래스
  */
 @Service
-@Transactional
 public class TextCollaborativeEditingService {
 
   final private Map<UUID, TextCollaborationSession> collaborationSessions;
@@ -62,6 +61,7 @@ public class TextCollaborativeEditingService {
     this.fugueNodeRepository = fugueNodeRepository;
   }
 
+  @Transactional
   public List<Participation> getUsersInSession(UUID sessionId) {
     TextCollaborationSession session = collaborationSessions.get(sessionId);
     if (session != null) {
@@ -82,6 +82,7 @@ public class TextCollaborativeEditingService {
    * @return 협업 세션의 TextNoteSegment DTO 의 리스트
    * @see TextCollaborativeEditingService#doCreateSession(Note, UserData, UUID)
    */
+  @Transactional
   public TextEditParticipateDTO participateSession(
       UUID participantUserId, UUID noteId) {
     Note note = noteRepository.getReferenceById(noteId);
@@ -116,7 +117,8 @@ public class TextCollaborativeEditingService {
    * @implNote participateSession() 와 분리한 이유는 다른 Service, Repository 와의 의존성을 기능에서 분리하기 위함입니다.
    * @see TextCollaborativeEditingService#participateSession(UUID, UUID)
    */
-  private List<TextSegmentDTO> doParticipateSession(Note note, UserData participant,
+  @Transactional
+  protected List<TextSegmentDTO> doParticipateSession(Note note, UserData participant,
       UUID sessionId) {
     TextCollaborationSession session = collaborationSessions.get(sessionId);
     if (session == null) {
@@ -144,7 +146,8 @@ public class TextCollaborativeEditingService {
    * @param sessionId   세션 ID
    * @see TextCollaborativeEditingService#doParticipateSession(Note, UserData, UUID)
    */
-  private TextCollaborationSession doCreateSession(Note note, UserData participant,
+  @Transactional
+  protected TextCollaborationSession doCreateSession(Note note, UserData participant,
       UUID sessionId) {
     TextCollaborationSession session = new TextCollaborationSession(
         segmentRepository.findAllByNote(note));
@@ -153,6 +156,7 @@ public class TextCollaborativeEditingService {
     return session;
   }
 
+  @Transactional
   public void editSegment(List<CRDTOperationDTO> operations, UUID segmentId, UUID sessionId) {
     var session = collaborationSessions.get(sessionId);
     if (session == null) {
@@ -164,6 +168,7 @@ public class TextCollaborativeEditingService {
     operations.forEach(operation -> editSegment(operation, segment, session));
   }
 
+  @Transactional
   public void editSegment(CRDTOperationDTO operation, TextNoteSegment segment,
       TextCollaborationSession session) {
     CRDTFugueTreeNode appliedNode = session.applyOperation(segment.getId(), operation);
@@ -183,6 +188,5 @@ public class TextCollaborativeEditingService {
       node = fugueNodeRepository.findById(operation.nodeId()).orElseThrow();
       node.setValue(appliedNode.getValue());
     }
-    fugueNodeRepository.save(node);
   }
 }

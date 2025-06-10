@@ -41,10 +41,15 @@ public class CRDTFugueTree {
     segment.getNodes().forEach(node -> {
       nodes.put(node.getId(), new CRDTFugueTreeNode(node.getId(), node.getValue()));
       if (node.getParent() == null) {
-        root.set(new CRDTFugueTreeNode(node.getId(), node.getValue()));
+        root.set(nodes.get(node.getId()));
       }
     });
-    this.root = new CRDTFugueTreeNode(root.get().getNodeId(), root.get().getValue());
+    segment.getNodes().forEach(node -> {
+      if (node.getParent() == null)
+          return;
+      nodes.get(node.getParent().getId()).addNode(node.getSide(), nodes.get(node.getId()));
+    });
+    this.root = root.get();
   }
 
   public CRDTFugueTreeNode insert(CRDTOperationDTO operation) {
