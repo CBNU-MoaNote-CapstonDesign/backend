@@ -185,7 +185,7 @@ public class TextCollaborativeEditingService {
       parent.addChild(node);
       segment.addNode(node);
     } else {
-      node = fugueNodeRepository.findById(operation.nodeId()).orElseThrow();
+      node = fugueNodeRepository.findBySegmentAndId(segment, operation.nodeId()).orElseThrow();
       node.setValue(appliedNode.getValue());
     }
   }
