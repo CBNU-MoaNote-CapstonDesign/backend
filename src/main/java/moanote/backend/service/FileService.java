@@ -11,6 +11,7 @@ import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
 import moanote.backend.entity.FileUserData.Permission;
+import moanote.backend.entity.Note.NoteType;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.FileUserDataRepository;
@@ -124,6 +125,11 @@ public class FileService {
       file = createFile(userId, fileCreateDTO.name(), fileCreateDTO.type());
     else
       file = createFile(userId, fileCreateDTO.name(), fileCreateDTO.type(), directoryId);
+
+    if (fileCreateDTO.isCode()) {
+      file.getNote().setType(NoteType.CODE);
+      file.getNote().setCodeLanguage(fileCreateDTO.language());
+    }
     return new FileDTO(file, creator);
   }
 

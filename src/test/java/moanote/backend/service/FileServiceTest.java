@@ -1,9 +1,13 @@
 package moanote.backend.service;
 
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import moanote.backend.BackendApplication;
+import moanote.backend.dto.FileCreateDTO;
+import moanote.backend.dto.FileDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
+import moanote.backend.entity.Note;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import org.junit.jupiter.api.Test;
@@ -72,5 +76,22 @@ class FileServiceTest {
         Assert.isTrue(!fileRepository.existsById(file.getId()), "Subdirectory should be deleted: " + file.getName());
       }
     }
+  }
+
+  @Test
+  @Transactional
+  void createFile_isCodeTrue() {
+    UserData userData = userService.createUser("testuser2", "testpassword2");
+    File rootDirectory = fileRepository.getRootDirectory(userData);
+
+    FileCreateDTO createRequest = new FileCreateDTO("file.js", FileType.DOCUMENT, true, Note.CodeLanguage.JAVASCRIPT);
+
+    FileDTO fileDTO = fileService.createFile(rootDirectory.getId(), userData.getId(), createRequest);
+
+    File file = fileRepository.getReferenceById(fileDTO.id());
+    Note note = file.getNote();
+    Assert.isTrue(note != null, "Note should not be null");
+    Assert.isTrue(file.getNote().getType().equals(Note.NoteType.CODE), "File should be of type CODE");
+    Assert.isTrue(file.getNote().getCodeLanguage().equals(Note.CodeLanguage.JAVASCRIPT), "File should be of language JAVASCRIPT");
   }
 }
