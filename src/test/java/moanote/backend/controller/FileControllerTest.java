@@ -10,6 +10,7 @@ import moanote.backend.entity.FileUserData;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.service.FileService;
+import moanote.backend.service.NoteService;
 import moanote.backend.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,9 @@ class FileControllerTest {
 
   @Autowired
   private FileController fileController;
+
+  @Autowired
+  private NoteService noteService;
 
   @Test
   void listFiles() {
@@ -195,6 +199,24 @@ class FileControllerTest {
       var files = fileService.getFilesByUserId(otherUser.getId());
       Assert.isTrue(files.size() == 1, "No files should not be left for the user");
     }
+  }
+
+  @Test
+  void deleteFile_withTextSegment() {
+    /* 재현: 텍스트 세그먼트가 연결된 문서를 삭제하면 Hibernate 가 TextNoteSegment.note 를 null 로 만들면서
+     *       PropertyValueException 이 발생했었음.
+     */
+    UserData user = userService.createUser("segmentUser", "segmentPassword");
+
+    File file = fileService.createFile(user.getId(), "file-with-segment", FileType.DOCUMENT);
+    noteService.createTextNoteSegment(file.getId());
+
+    var response = fileController.deleteFile(file.getId(), user.getId());
+
+    Assert.isTrue(response.getStatusCode().is2xxSuccessful(),
+        "Response should be successful when deleting a file with text segments");
+    Assert.isTrue(fileRepository.findById(file.getId()).isEmpty(),
+        "File with text segments should be deleted");
   }
 
   @Test
