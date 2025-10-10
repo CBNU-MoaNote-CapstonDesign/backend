@@ -99,7 +99,11 @@ public class TextCollaborativeEditingService {
       }
     });
     var segmentLists = doParticipateSession(note, participant, noteId);
-    NoteDTO noteDTO = new NoteDTO(fileDTO, uuidSegmentTypeMap);
+    NoteDTO noteDTO = new NoteDTO(
+        fileDTO,
+        uuidSegmentTypeMap,
+        note.getType() == Note.NoteType.CODE,
+        note.getCodeLanguage());
     return new TextEditParticipateDTO(noteDTO, segmentLists);
   }
 

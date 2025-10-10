@@ -105,7 +105,10 @@ public class NoteService {
     FugueNode root = new FugueNode();
     root.setId("rt");
     root.setSegment(segment);
-    entityManager.persist(root);
+    root.setParent(null);
+    root.setSide(null);
+    root.setValue(null);
+    segment.addNode(root);
     segment.setRootNode(root);
     return segment;
   }
@@ -132,7 +135,9 @@ public class NoteService {
     diagramSegments.forEach(segment -> segments.put(segment.getId(), SegmentType.DIAGRAM));
     return new NoteDTO(
         new FileDTO(note.getFile(), fileUserDataRepository.findOwnerByFile(note.getFile()).getUser()),
-        segments
+        segments,
+        note.getType() == Note.NoteType.CODE,
+        note.getCodeLanguage()
     );
   }
 

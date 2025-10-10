@@ -12,6 +12,7 @@ import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
 import moanote.backend.entity.FileUserData.Permission;
 import moanote.backend.entity.Note.NoteType;
+import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.FileUserDataRepository;
@@ -365,6 +366,14 @@ public class FileService {
     }
 
     file.getDirectory().removeChild(file);
+    if (file.getNote() != null) {
+      file.getNote().getSegments().forEach(segment -> {
+        if (segment instanceof TextNoteSegment textSegment) {
+          textSegment.setRootNode(null);
+          textSegment.getNodes().clear();
+        }
+      });
+    }
     fileRepository.delete(file);
   }
 
