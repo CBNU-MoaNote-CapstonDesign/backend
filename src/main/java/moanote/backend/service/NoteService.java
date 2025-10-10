@@ -134,8 +134,11 @@ public class NoteService {
     textSegments.forEach(segment -> segments.put(segment.getId(), SegmentType.TEXT));
     diagramSegments.forEach(segment -> segments.put(segment.getId(), SegmentType.DIAGRAM));
     return new NoteDTO(
-        new FileDTO(note.getFile(), fileUserDataRepository.findOwnerByFile(note.getFile()).getUser()),
-        segments
+        new FileDTO(note.getFile(),
+            fileUserDataRepository.findOwnerByFile(note.getFile()).getUser()),
+        segments,
+        note.getType() == Note.NoteType.CODE,
+        note.getCodeLanguage()
     );
   }
 
