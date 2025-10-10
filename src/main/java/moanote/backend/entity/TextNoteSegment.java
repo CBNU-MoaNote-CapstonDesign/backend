@@ -22,7 +22,7 @@ public class TextNoteSegment extends BaseNoteSegment {
     nodes.add(node);
   }
 
-  @OneToOne
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumns(value = {
       @JoinColumn(name = "root_node_id", referencedColumnName = "id"),
       @JoinColumn(name = "root_segment_id", referencedColumnName = "segment_id")

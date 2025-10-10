@@ -18,10 +18,7 @@ import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-
+import moanote.backend.entity.TextNoteSegment;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -365,6 +362,14 @@ public class FileService {
     }
 
     file.getDirectory().removeChild(file);
+    if (file.getNote() != null) {
+      file.getNote().getSegments().forEach(segment -> {
+        if (segment instanceof TextNoteSegment textSegment) {
+          textSegment.setRootNode(null);
+          textSegment.getNodes().clear();
+        }
+      });
+    }
     fileRepository.delete(file);
   }
 

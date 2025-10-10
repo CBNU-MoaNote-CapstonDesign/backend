@@ -105,7 +105,10 @@ public class NoteService {
     FugueNode root = new FugueNode();
     root.setId("rt");
     root.setSegment(segment);
-    entityManager.persist(root);
+    root.setParent(null);
+    root.setSide(null);
+    root.setValue(null);
+    segment.addNode(root);
     segment.setRootNode(root);
     return segment;
   }
