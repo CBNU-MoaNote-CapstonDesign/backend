@@ -366,15 +366,25 @@ public class FileService {
     }
 
     file.getDirectory().removeChild(file);
-    if (file.getNote() != null) {
-      file.getNote().getSegments().forEach(segment -> {
-        if (segment instanceof TextNoteSegment textSegment) {
-          textSegment.setRootNode(null);
-          textSegment.getNodes().clear();
-        }
-      });
-    }
+    clearTextSegments(file);
     fileRepository.delete(file);
+  }
+
+  private void clearTextSegments(File file) {
+    if (file.getNote() == null) {
+      return;
+    }
+
+    file.getNote().getSegments().forEach(segment -> {
+      if (segment instanceof TextNoteSegment textSegment) {
+        clearTextSegmentNodes(textSegment);
+      }
+    });
+  }
+
+  private void clearTextSegmentNodes(TextNoteSegment textSegment) {
+    textSegment.setRootNode(null);
+    textSegment.getNodes().clear();
   }
 
   /**

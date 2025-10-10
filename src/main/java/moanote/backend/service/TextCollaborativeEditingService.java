@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.transaction.Transactional;
@@ -103,7 +104,7 @@ public class TextCollaborativeEditingService {
         fileDTO,
         uuidSegmentTypeMap,
         note.getType() == Note.NoteType.CODE,
-        note.getCodeLanguage());
+        Optional.ofNullable(note.getCodeLanguage()));
     return new TextEditParticipateDTO(noteDTO, segmentLists);
   }
 

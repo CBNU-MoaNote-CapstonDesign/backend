@@ -3,6 +3,7 @@ package moanote.backend.service;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import java.util.Optional;
 import moanote.backend.dto.AddSegmentDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.NoteDTO;
@@ -104,7 +105,6 @@ public class NoteService {
 
     FugueNode root = new FugueNode();
     root.setId("rt");
-    root.setSegment(segment);
     root.setParent(null);
     root.setSide(null);
     root.setValue(null);
@@ -137,7 +137,7 @@ public class NoteService {
         new FileDTO(note.getFile(), fileUserDataRepository.findOwnerByFile(note.getFile()).getUser()),
         segments,
         note.getType() == Note.NoteType.CODE,
-        note.getCodeLanguage()
+        Optional.ofNullable(note.getCodeLanguage())
     );
   }
 
