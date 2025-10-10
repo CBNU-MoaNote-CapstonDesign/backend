@@ -18,6 +18,8 @@ import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import moanote.backend.entity.BaseNoteSegment;
+import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -361,15 +363,26 @@ public class FileService {
       throw new IllegalArgumentException("User does not have permission to delete this file");
     }
 
-    file.getDirectory().removeChild(file);
-    if (file.getNote() != null) {
-      file.getNote().getSegments().forEach(segment -> {
+    Note note = file.getNote();
+    if (note != null) {
+      /* Hibernate 가 Note 삭제 시 연관 Segment 의 note 필드를 null 로 설정하면서 발생하는
+       * PropertyValueException 을 피하기 위해, 연관 segment 들을 명시적으로 삭제한다.
+       * 문제: 파일 삭제 중 TextNoteSegment.note 가 null 로 설정되어 not-null 제약 위반.
+       */
+      for (BaseNoteSegment segment : List.copyOf(note.getSegments())) {
         if (segment instanceof TextNoteSegment textSegment) {
           textSegment.setRootNode(null);
           textSegment.getNodes().clear();
         }
-      });
+        entityManager.remove(segment);
+      }
+      note.getSegments().clear();
+      note.setFile(null);
+      entityManager.remove(note);
+      file.setNote(null);
     }
+
+    file.getDirectory().removeChild(file);
     fileRepository.delete(file);
   }
 
