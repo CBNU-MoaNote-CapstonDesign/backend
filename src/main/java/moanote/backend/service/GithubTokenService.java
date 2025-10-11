@@ -1,31 +1,34 @@
 package moanote.backend.service;
 
-import jakarta.transaction.Transactional;
+import moanote.backend.config.GithubOAuthProperties;
 import moanote.backend.dto.GithubCredentials;
-import moanote.backend.entity.GithubToken;
 import moanote.backend.entity.UserData;
-import moanote.backend.repository.GithubTokenRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * <pre>
- *   GithubTokenService 는 사용자별로 발급된 GitHub OAuth 토큰을 저장하고 조회합니다.
+ *   GithubTokenService 는 사용자별로 발급된 GitHub OAuth 토큰을 메모리에 저장하고 조회합니다.
+ *   토큰은 구성된 TTL 이 지나면 자동으로 만료되어 제거됩니다.
  * </pre>
  */
 @Service
 public class GithubTokenService {
 
-  private final GithubTokenRepository githubTokenRepository;
+  private final GithubOAuthProperties githubOAuthProperties;
   private final UserDataRepository userDataRepository;
+  private final ConcurrentMap<UUID, StoredToken> tokenStore = new ConcurrentHashMap<>();
 
-  public GithubTokenService(GithubTokenRepository githubTokenRepository, UserDataRepository userDataRepository) {
-    this.githubTokenRepository = githubTokenRepository;
+  public GithubTokenService(GithubOAuthProperties githubOAuthProperties, UserDataRepository userDataRepository) {
+    this.githubOAuthProperties = githubOAuthProperties;
     this.userDataRepository = userDataRepository;
   }
 
@@ -37,15 +40,19 @@ public class GithubTokenService {
    * @param userId 토큰을 조회할 사용자 식별자
    * @return 저장된 자격 증명 또는 비어 있는 Optional
    */
-  @Transactional
   public Optional<GithubCredentials> findCredentials(UUID userId) {
     if (userId == null) {
       return Optional.empty();
     }
-    return githubTokenRepository.findById(userId)
-        .map(GithubToken::getAccessToken)
-        .filter(token -> token != null && !token.isBlank())
-        .map(GithubCredentials::forOAuthToken);
+
+    purgeExpiredTokens();
+    StoredToken storedToken = tokenStore.get(userId);
+    if (storedToken == null || storedToken.isExpired()) {
+      tokenStore.remove(userId);
+      return Optional.empty();
+    }
+
+    return Optional.of(GithubCredentials.forOAuthToken(storedToken.accessToken()));
   }
 
   /**
@@ -57,7 +64,6 @@ public class GithubTokenService {
    * @return 저장된 GitHub 자격 증명
    * @throws IllegalArgumentException 토큰이 존재하지 않는 경우
    */
-  @Transactional
   public GithubCredentials requireCredentials(UUID userId) {
     return findCredentials(userId)
         .orElseThrow(() -> new IllegalArgumentException("GitHub token not found for user: " + userId));
@@ -65,7 +71,7 @@ public class GithubTokenService {
 
   /**
    * <pre>
-   *   OAuth 과정에서 발급된 액세스 토큰을 저장하거나 갱신합니다.
+   *   OAuth 과정에서 발급된 액세스 토큰을 메모리에 저장하거나 갱신합니다.
    * </pre>
    *
    * @param userId      토큰을 저장할 사용자
@@ -73,7 +79,6 @@ public class GithubTokenService {
    * @param tokenType   토큰 타입 (예: {@code bearer})
    * @param scope       부여된 scope 문자열
    */
-  @Transactional
   public void saveOrUpdateToken(UUID userId, String accessToken, String tokenType, String scope) {
     if (userId == null) {
       throw new IllegalArgumentException("userId must not be null");
@@ -88,15 +93,23 @@ public class GithubTokenService {
     UserData user = userDataRepository.findById(userId)
         .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
-    GithubToken token = githubTokenRepository.findByUser(user)
-        .orElseGet(GithubToken::new);
+    tokenStore.put(user.getId(), StoredToken.create(accessToken, tokenType, scope, githubOAuthProperties.getTokenTtl()));
+  }
 
-    token.setUser(user);
-    token.setAccessToken(accessToken);
-    token.setTokenType(tokenType);
-    token.setScope(scope);
-    token.setUpdatedAt(Instant.now());
+  private void purgeExpiredTokens() {
+    Instant now = Instant.now();
+    tokenStore.entrySet().removeIf(entry -> entry.getValue().expiresAt().isBefore(now));
+  }
 
-    githubTokenRepository.save(token);
+  private record StoredToken(String accessToken, String tokenType, String scope, Instant expiresAt) {
+
+    static StoredToken create(String accessToken, String tokenType, String scope, Duration ttl) {
+      Instant expiresAt = Instant.now().plus(ttl);
+      return new StoredToken(accessToken, tokenType, scope, expiresAt);
+    }
+
+    boolean isExpired() {
+      return Instant.now().isAfter(expiresAt);
+    }
   }
 }

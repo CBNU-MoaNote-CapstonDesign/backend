@@ -1,9 +1,12 @@
 package moanote.backend.config;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
 
-import jakarta.validation.constraints.NotBlank;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 /**
  * <pre>
@@ -24,6 +27,12 @@ public class GithubOAuthProperties {
   private String redirectUri;
 
   private String scope = "repo";
+
+  @DurationUnit(ChronoUnit.MINUTES)
+  private Duration stateTtl = Duration.ofMinutes(10);
+
+  @DurationUnit(ChronoUnit.HOURS)
+  private Duration tokenTtl = Duration.ofHours(1);
 
   public String getClientId() {
     return clientId;
@@ -55,5 +64,21 @@ public class GithubOAuthProperties {
 
   public void setScope(String scope) {
     this.scope = scope;
+  }
+
+  public Duration getStateTtl() {
+    return stateTtl;
+  }
+
+  public void setStateTtl(Duration stateTtl) {
+    this.stateTtl = stateTtl;
+  }
+
+  public Duration getTokenTtl() {
+    return tokenTtl;
+  }
+
+  public void setTokenTtl(Duration tokenTtl) {
+    this.tokenTtl = tokenTtl;
   }
 }

@@ -8,6 +8,8 @@
 | `github.oauth.client-secret` | GitHub OAuth App 생성 시 발급된 **Client Secret** | 백엔드 서버만 알고 있도록 안전하게 보관하세요. |
 | `github.oauth.redirect-uri` | GitHub OAuth App 에 등록한 **Authorization callback URL** | GitHub 개발자 설정의 Callback URL 과 동일해야 합니다. 예시: `http://localhost:8080/oauth/callback` |
 | `github.oauth.scope` | 액세스 토큰이 접근할 **권한 범위(scope)** | 저장소 조작이 필요하면 `repo` 를 사용합니다. 필요한 권한에 따라 조정 가능합니다. |
+| `github.oauth.state-ttl` | Authorization state 를 메모리에 유지할 시간(예: `10m`) | 기본값은 10분이며, 시간이 지나면 state 는 자동으로 폐기됩니다. |
+| `github.oauth.token-ttl` | GitHub 액세스 토큰을 메모리에 유지할 시간(예: `1h`) | 기본값은 1시간이며, 만료되면 다시 OAuth 플로우를 진행해야 합니다. |
 
 > `{{BASE_URL}}` 는 백엔드 서버 주소(예: `http://localhost:8080`)로 치환하세요.
 
@@ -44,7 +46,7 @@ curl -X POST "{{BASE_URL}}/api/github/oauth/callback" \
   }'
 ```
 
-응답이 `204 No Content` 이면 토큰이 저장되었습니다.
+응답이 `204 No Content` 이면 토큰이 저장되었습니다. 토큰은 백엔드 메모리에만 보관되며 `github.oauth.token-ttl` 설정값이 지나면 만료됩니다.
 
 ## 3. 저장소 불러오기 (저장된 토큰 사용)
 

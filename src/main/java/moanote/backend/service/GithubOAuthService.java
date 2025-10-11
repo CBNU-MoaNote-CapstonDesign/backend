@@ -1,44 +1,43 @@
 package moanote.backend.service;
 
-import jakarta.transaction.Transactional;
 import moanote.backend.config.GithubOAuthProperties;
 import moanote.backend.dto.GithubOAuthAuthorizeResponse;
-import moanote.backend.entity.GithubOAuthState;
 import moanote.backend.entity.UserData;
-import moanote.backend.repository.GithubOAuthStateRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * <pre>
  *   GithubOAuthService 는 GitHub OAuth Authorization Code Flow 를 수행하기 위한 도우미 서비스를 제공합니다.
+ *   OAuth state 정보는 데이터베이스 대신 메모리에 보관되며, 설정된 TTL 이 지나면 자동으로 무효화됩니다.
  * </pre>
  */
 @Service
 public class GithubOAuthService {
 
   private final GithubOAuthProperties properties;
-  private final GithubOAuthStateRepository stateRepository;
   private final GithubTokenService githubTokenService;
   private final UserDataRepository userDataRepository;
   private final WebClient githubWebClient;
+  private final ConcurrentMap<String, StoredState> stateStore = new ConcurrentHashMap<>();
 
   public GithubOAuthService(GithubOAuthProperties properties,
-      GithubOAuthStateRepository stateRepository,
       GithubTokenService githubTokenService,
       UserDataRepository userDataRepository,
       WebClient.Builder webClientBuilder) {
     this.properties = properties;
-    this.stateRepository = stateRepository;
     this.githubTokenService = githubTokenService;
     this.userDataRepository = userDataRepository;
     this.githubWebClient = webClientBuilder
@@ -50,24 +49,24 @@ public class GithubOAuthService {
   /**
    * <pre>
    *   OAuth 인증을 시작하기 위한 GitHub Authorization URL 을 생성하고 state 값을 저장합니다.
+   *   저장된 state 는 메모리에 보관되며 설정된 TTL 이 지나면 무효 처리됩니다.
    * </pre>
    *
    * @param userId OAuth 를 수행할 사용자
    * @return 생성된 Authorization URL 과 state 정보
    */
-  @Transactional
   public GithubOAuthAuthorizeResponse createAuthorizationUrl(UUID userId) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId must not be null");
+    }
+
     UserData user = userDataRepository.findById(userId)
         .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
+    purgeExpiredStates();
     String state = UUID.randomUUID().toString();
-    GithubOAuthState oauthState = new GithubOAuthState();
-    oauthState.setId(UUID.randomUUID());
-    oauthState.setUser(user);
-    oauthState.setState(state);
-    oauthState.setCreatedAt(Instant.now());
-
-    stateRepository.save(oauthState);
+    removeStatesForUser(user.getId());
+    stateStore.put(state, StoredState.create(user.getId(), properties.getStateTtl()));
 
     String authorizationUrl = UriComponentsBuilder.fromHttpUrl("https://github.com/login/oauth/authorize")
         .queryParam("client_id", properties.getClientId())
@@ -83,14 +82,17 @@ public class GithubOAuthService {
   /**
    * <pre>
    *   GitHub 로부터 전달받은 Authorization Code 를 액세스 토큰으로 교환하고 사용자에게 저장합니다.
+   *   교환이 완료되면 메모리에 저장된 state 정보를 즉시 제거합니다.
    * </pre>
    *
    * @param userId OAuth 를 수행한 사용자
    * @param code   GitHub 에서 전달한 Authorization Code
    * @param state  CSRF 방지를 위한 state 값
    */
-  @Transactional
   public void exchangeCode(UUID userId, String code, String state) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId must not be null");
+    }
     if (code == null || code.isBlank()) {
       throw new IllegalArgumentException("code must not be blank");
     }
@@ -98,10 +100,14 @@ public class GithubOAuthService {
       throw new IllegalArgumentException("state must not be blank");
     }
 
-    GithubOAuthState savedState = stateRepository.findByState(state)
-        .orElseThrow(() -> new IllegalArgumentException("Invalid or expired OAuth state"));
+    purgeExpiredStates();
+    StoredState savedState = stateStore.get(state);
+    if (savedState == null || savedState.isExpired()) {
+      stateStore.remove(state);
+      throw new IllegalArgumentException("Invalid or expired OAuth state");
+    }
 
-    if (!savedState.getUser().getId().equals(userId)) {
+    if (!savedState.userId().equals(userId)) {
       throw new IllegalArgumentException("OAuth state does not belong to user: " + userId);
     }
 
@@ -129,6 +135,27 @@ public class GithubOAuthService {
     }
 
     githubTokenService.saveOrUpdateToken(userId, accessToken, tokenType, scope);
-    stateRepository.delete(savedState);
+    stateStore.remove(state);
+  }
+
+  private void purgeExpiredStates() {
+    Instant now = Instant.now();
+    stateStore.entrySet().removeIf(entry -> entry.getValue().expiresAt().isBefore(now));
+  }
+
+  private void removeStatesForUser(UUID userId) {
+    stateStore.entrySet().removeIf(entry -> entry.getValue().userId().equals(userId));
+  }
+
+  private record StoredState(UUID userId, Instant expiresAt) {
+
+    static StoredState create(UUID userId, Duration ttl) {
+      Instant expiresAt = Instant.now().plus(ttl);
+      return new StoredState(userId, expiresAt);
+    }
+
+    boolean isExpired() {
+      return Instant.now().isAfter(expiresAt);
+    }
   }
 }
