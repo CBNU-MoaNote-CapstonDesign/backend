@@ -59,7 +59,8 @@ public class CRDTFugueTree {
     CRDTFugueTreeNode parentNode = nodes.get(operation.parentId());
     CRDTFugueTreeNode newNode = new CRDTFugueTreeNode(operation.nodeId(), operation.value());
     parentNode.addNode(operation.side(), newNode);
-    return nodes.put(newNode.getNodeId(), newNode);
+    nodes.put(newNode.getNodeId(), newNode);
+    return newNode;
   }
 
   public CRDTFugueTreeNode delete(CRDTOperationDTO operation) {
