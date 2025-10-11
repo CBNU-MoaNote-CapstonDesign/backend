@@ -4,14 +4,11 @@ import moanote.backend.BackendApplication;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
-import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note.CodeLanguage;
 import moanote.backend.entity.Note.NoteType;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
-import moanote.backend.domain.CRDTFugueTree;
 import moanote.backend.repository.FileRepository;
-import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -41,8 +38,6 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -73,7 +68,6 @@ class GithubIntegrationServiceTest {
   private TextNoteSegmentRepository textNoteSegmentRepository;
 
   @Autowired
-  private FugueNodeRepository fugueNodeRepository;
 
   private static final String REPOSITORY_NAME = "sample-repo";
 
@@ -330,28 +324,6 @@ class GithubIntegrationServiceTest {
 
   private String readSegmentContent(TextNoteSegment segment) {
     TextNoteSegment reloaded = textNoteSegmentRepository.findById(segment.getId()).orElseThrow();
-    List<FugueNode> nodes = fugueNodeRepository.findAllBySegment(reloaded);
-    TextNoteSegment treeSegment = new TextNoteSegment();
-    treeSegment.setId(reloaded.getId());
-    Map<String, FugueNode> clones = new HashMap<>();
-    for (FugueNode node : nodes) {
-      FugueNode clone = new FugueNode();
-      clone.setId(node.getId());
-      clone.setValue(node.getValue());
-      clone.setSide(node.getSide());
-      clone.setSegment(treeSegment);
-      clones.put(node.getId(), clone);
-    }
-    for (FugueNode node : nodes) {
-      if (node.getParent() != null) {
-        clones.get(node.getId()).setParent(clones.get(node.getParent().getId()));
-      }
-    }
-    treeSegment.setNodes(new HashSet<>(clones.values()));
-    nodes.stream().filter(node -> node.getParent() == null)
-        .findFirst()
-        .ifPresent(root -> treeSegment.setRootNode(clones.get(root.getId())));
-    CRDTFugueTree tree = new CRDTFugueTree(treeSegment);
-    return String.join("", tree.getOrderedElements());
+    return reloaded.getContent();
   }
 }

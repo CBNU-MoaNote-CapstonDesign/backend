@@ -29,4 +29,17 @@ class CRDTOrderTreeTest {
     Assert.isTrue(String.join("", tree.getOrderedElements()).equals("ABCDE"),
         "Ordered elements should be ABCDE" + " but got " + String.join("", tree.getOrderedElements()));
   }
+
+  @Test
+  void fromPlainTextCreatesSequentialRightChildren() {
+    String content = "This is long content";
+    CRDTFugueTree tree = CRDTFugueTree.fromPlainText(content);
+    var nodes = tree.getNodesDTO();
+
+    Assert.isTrue("rt".equals(nodes.getFirst().id()), "Root node identifier must be stable");
+    Assert.isTrue(nodes.size() == 21,
+        "Every character should produce a node in addition to the root");
+    Assert.isTrue(String.join("", tree.getOrderedElements()).equals(content),
+        "In-order traversal must reconstruct the source text");
+  }
 }

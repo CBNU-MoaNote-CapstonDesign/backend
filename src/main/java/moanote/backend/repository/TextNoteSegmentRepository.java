@@ -14,9 +14,6 @@ public interface TextNoteSegmentRepository extends JpaRepository<TextNoteSegment
 
   Optional<TextNoteSegment> findTextNoteSegmentById(UUID id);
 
-  /**
-   * 항상 FugueNodeRepository 의 createRootNode 메소드를 함께 사용해야 합니다.
-   */
   default TextNoteSegment create(TextNoteSegment segment) {
     segment.setId(UuidCreator.getTimeOrderedEpoch());
     return save(segment);

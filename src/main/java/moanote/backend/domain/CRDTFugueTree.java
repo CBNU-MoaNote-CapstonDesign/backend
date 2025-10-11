@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -23,6 +22,8 @@ import java.util.function.Consumer;
  */
 public class CRDTFugueTree {
 
+  private static final String ROOT_NODE_ID = "rt";
+
   /**
    * 데이터를 가지지 않고, tree 의 entry point 역할을 하는 root node 입니다.
    */
@@ -30,26 +31,41 @@ public class CRDTFugueTree {
   private final Map<String, CRDTFugueTreeNode> nodes;
 
   CRDTFugueTree() {
-    this.root = new CRDTFugueTreeNode();
     nodes = new ConcurrentHashMap<>();
+    this.root = new CRDTFugueTreeNode(ROOT_NODE_ID, null);
     nodes.put(root.getNodeId(), root);
   }
 
   public CRDTFugueTree(TextNoteSegment segment) {
-    nodes = new ConcurrentHashMap<>();
-    AtomicReference<CRDTFugueTreeNode> root = new AtomicReference<>(null);
-    segment.getNodes().forEach(node -> {
-      nodes.put(node.getId(), new CRDTFugueTreeNode(node.getId(), node.getValue()));
-      if (node.getParent() == null) {
-        root.set(nodes.get(node.getId()));
-      }
-    });
-    segment.getNodes().forEach(node -> {
-      if (node.getParent() == null)
-          return;
-      nodes.get(node.getParent().getId()).addNode(node.getSide(), nodes.get(node.getId()));
-    });
-    this.root = root.get();
+    this();
+    populateFromPlainText(segment.getContent());
+  }
+
+  /**
+   * Creates a new CRDT-based Fugue tree using a linear plain-text representation.
+   *
+   * @param plainText the plain-text content to translate into CRDT nodes. {@code null} is treated as an empty string.
+   * @return a Fugue tree that contains the same textual information.
+   */
+  public static CRDTFugueTree fromPlainText(String plainText) {
+    CRDTFugueTree tree = new CRDTFugueTree();
+    tree.populateFromPlainText(plainText);
+    return tree;
+  }
+
+  /**
+   * Populates this tree instance using the provided plain-text data.
+   *
+   * @param plainText the source content that should be translated into CRDT nodes.
+   */
+  private void populateFromPlainText(String plainText) {
+    String normalized = plainText == null ? "" : plainText;
+    for (int index = 0; index < normalized.length(); index++) {
+      String nodeId = String.format("pl%08d", index);
+      CRDTFugueTreeNode node = new CRDTFugueTreeNode(nodeId, String.valueOf(normalized.charAt(index)));
+      root.addNode(Side.RIGHT, node);
+      nodes.put(nodeId, node);
+    }
   }
 
   public CRDTFugueTreeNode insert(CRDTOperationDTO operation) {

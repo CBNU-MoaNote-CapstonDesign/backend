@@ -9,6 +9,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.transaction.Transactional;
+import moanote.backend.domain.CRDTFugueTree;
 import moanote.backend.domain.CRDTFugueTreeNode;
 import moanote.backend.domain.TextCollaborationSession;
 import moanote.backend.domain.TextCollaborationSession.Participation;
@@ -19,12 +20,10 @@ import moanote.backend.dto.OperationType;
 import moanote.backend.dto.SegmentType;
 import moanote.backend.dto.TextEditParticipateDTO;
 import moanote.backend.dto.TextSegmentDTO;
-import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileUserDataRepository;
-import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import moanote.backend.repository.UserDataRepository;
@@ -45,20 +44,17 @@ public class TextCollaborativeEditingService {
 
   final private NoteRepository noteRepository;
 
-  final private FugueNodeRepository fugueNodeRepository;
-
   final private FileUserDataRepository fileUserDataRepository;
 
   @Autowired
   public TextCollaborativeEditingService(TextNoteSegmentRepository segmentRepository,
       UserDataRepository userDataRepository, NoteRepository noteRepository,
-      FugueNodeRepository fugueNodeRepository, FileUserDataRepository fileUserDataRepository) {
+      FileUserDataRepository fileUserDataRepository) {
     this.noteRepository = noteRepository;
     this.fileUserDataRepository = fileUserDataRepository;
     this.collaborationSessions = new ConcurrentHashMap<>();
     this.segmentRepository = segmentRepository;
     this.userDataRepository = userDataRepository;
-    this.fugueNodeRepository = fugueNodeRepository;
   }
 
   @Transactional
@@ -175,22 +171,15 @@ public class TextCollaborativeEditingService {
   @Transactional
   public void editSegment(CRDTOperationDTO operation, TextNoteSegment segment,
       TextCollaborationSession session) {
+    CRDTFugueTree tree = session.getSegment(segment.getId());
     CRDTFugueTreeNode appliedNode = session.applyOperation(segment.getId(), operation);
-    FugueNode node;
-    if (operation.type() == OperationType.INSERT) {
-      if (operation.parentId() == null) {
-        throw new IllegalArgumentException();
-      }
-      node = new FugueNode();
-      var parent = fugueNodeRepository.findBySegmentAndId(segment, operation.parentId()).orElseThrow();
-      node.setSide(operation.side());
-      node.setValue(operation.value());
-      node.setId(operation.nodeId());
-      parent.addChild(node);
-      segment.addNode(node);
-    } else {
-      node = fugueNodeRepository.findBySegmentAndId(segment, operation.nodeId()).orElseThrow();
-      node.setValue(appliedNode.getValue());
+    if (operation.type() == OperationType.INSERT && operation.parentId() == null) {
+      throw new IllegalArgumentException("Insert operation requires a parent node identifier");
+    }
+    if (appliedNode != null) {
+      String updatedContent = String.join("", tree.getOrderedElements());
+      segment.updateContent(updatedContent);
+      segmentRepository.save(segment);
     }
   }
 }

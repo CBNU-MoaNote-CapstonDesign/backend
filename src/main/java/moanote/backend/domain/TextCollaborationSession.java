@@ -37,7 +37,8 @@ public class TextCollaborationSession {
 
   public TextCollaborationSession(List<TextNoteSegment> textSegments) {
     segmentTreeMap = new ConcurrentHashMap<>();
-    textSegments.forEach(segment -> segmentTreeMap.put(segment.getId(), new CRDTFugueTree(segment)));
+    textSegments.forEach(segment -> segmentTreeMap.put(segment.getId(),
+        CRDTFugueTree.fromPlainText(segment.getContent())));
     participants = new ConcurrentHashMap<>();
   }
 
