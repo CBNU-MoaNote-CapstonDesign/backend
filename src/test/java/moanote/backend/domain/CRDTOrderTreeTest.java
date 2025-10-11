@@ -1,49 +1,32 @@
 package moanote.backend.domain;
 
+import moanote.backend.domain.CRDTFugueTreeNode.Side;
+import moanote.backend.dto.CRDTOperationDTO;
+import moanote.backend.dto.OperationType;
 import org.junit.jupiter.api.Test;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Stack;
+import org.springframework.util.Assert;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CRDTOrderTreeTest {
 
+  @Test
+  void testGetOrderedElements() {
+    CRDTFugueTree tree = new CRDTFugueTree();
+    CRDTFugueTreeNode tail;
+    tail = tree.insert(
+        new CRDTOperationDTO(OperationType.INSERT, "1", "A", tree.getNodesDTO().getFirst().id(),
+            Side.RIGHT, "user1"));
 
-//  @Test
-//  void testInsertNoConflict() {
-//    CRDTOrderTree tree = new CRDTOrderTree();
-//    tree.insert("1", "1", "root", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("2", "2", "1", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("3", "3", "1", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("4", "4", "2", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("5", "5", "2", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("6", "6", "3", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("7", "7", "3", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("8", "8", "4", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("9", "9", "4", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("10", "10", "5", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("11", "11", "5", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("12", "12", "6", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("13", "13", "6", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("14", "14", "7", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("15", "15", "7", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("16", "16", "8", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("17", "17", "8", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("18", "18", "9", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("19", "19", "9", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("20", "20", "10", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("21", "21", "10", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("22", "22", "11", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("23", "23", "11", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("24", "24", "12", CRDTOrderTreeNode.Side.LEFT);
-//    tree.insert("25", "25", "12", CRDTOrderTreeNode.Side.RIGHT);
-//    tree.insert("26", "26", "13", CRDTOrderTreeNode.Side.LEFT);
-//
-//    for (int i = 1; i <= 26; i++) {
-//      tree.update(Integer.toString(i),
-//          new LWWRegister(Integer.toString(i), 1, Integer.toString(i) + "\n"));
-//    }
-//  }
+    Assert.isTrue(tail != null, "Tail should not be null after first insertion");
+    for (int i = 2; i <= 5; i++) {
+      tail = tree.insert(
+          new CRDTOperationDTO(OperationType.INSERT, String.valueOf(i),
+              String.valueOf((char) ('A' + i - 1)),
+              tail.getNodeId(), Side.RIGHT, "user1"));
+    }
 
+    Assert.isTrue(String.join("", tree.getOrderedElements()).equals("ABCDE"),
+        "Ordered elements should be ABCDE" + " but got " + String.join("", tree.getOrderedElements()));
+  }
 }
