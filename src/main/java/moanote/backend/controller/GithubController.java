@@ -4,7 +4,11 @@ import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.GithubBranchCommitRequest;
 import moanote.backend.dto.GithubFetchRequest;
 import moanote.backend.dto.GithubImportRequest;
+import moanote.backend.dto.GithubOAuthAuthorizeRequest;
+import moanote.backend.dto.GithubOAuthAuthorizeResponse;
+import moanote.backend.dto.GithubOAuthCallbackRequest;
 import moanote.backend.service.GithubIntegrationService;
+import moanote.backend.service.GithubOAuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,9 +28,56 @@ import java.util.NoSuchElementException;
 public class GithubController {
 
   private final GithubIntegrationService githubIntegrationService;
+  private final GithubOAuthService githubOAuthService;
 
-  public GithubController(GithubIntegrationService githubIntegrationService) {
+  public GithubController(GithubIntegrationService githubIntegrationService,
+      GithubOAuthService githubOAuthService) {
     this.githubIntegrationService = githubIntegrationService;
+    this.githubOAuthService = githubOAuthService;
+  }
+
+  /**
+   * <pre>
+   *   GitHub OAuth 인증을 시작하기 위한 Authorization URL 을 생성합니다.
+   * </pre>
+   *
+   * @param request OAuth 인증을 시작할 사용자 정보
+   * @return Authorization URL 과 state 값을 포함한 응답
+   */
+  @PostMapping("/oauth/authorize")
+  public ResponseEntity<GithubOAuthAuthorizeResponse> authorize(@RequestBody GithubOAuthAuthorizeRequest request) {
+    try {
+      GithubOAuthAuthorizeResponse response = githubOAuthService.createAuthorizationUrl(request.userId());
+      return ResponseEntity.ok(response);
+    } catch (NoSuchElementException e) {
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().build();
+    }
+  }
+
+  /**
+   * <pre>
+   *   GitHub OAuth 콜백에서 전달된 code/state 를 교환하여 액세스 토큰을 저장합니다.
+   * </pre>
+   *
+   * @param request GitHub OAuth 콜백 정보
+   * @return 성공 시 204 No Content
+   */
+  @PostMapping("/oauth/callback")
+  public ResponseEntity<Void> callback(@RequestBody GithubOAuthCallbackRequest request) {
+    try {
+      githubOAuthService.exchangeCode(request.userId(), request.code(), request.state());
+      return ResponseEntity.noContent().build();
+    } catch (NoSuchElementException e) {
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().build();
+    }
   }
 
   /**
@@ -40,8 +91,7 @@ public class GithubController {
   @PostMapping("/import")
   public ResponseEntity<List<FileDTO>> importRepository(@RequestBody GithubImportRequest request) {
     try {
-      List<FileDTO> imported = githubIntegrationService.importRepository(request.userId(), request.repositoryUrl(),
-          request.credentials());
+      List<FileDTO> imported = githubIntegrationService.importRepository(request.userId(), request.repositoryUrl());
       return ResponseEntity.ok(imported);
     } catch (NoSuchElementException e) {
       return ResponseEntity.status(404).build();
@@ -64,7 +114,7 @@ public class GithubController {
   public ResponseEntity<Void> createBranchAndCommit(@RequestBody GithubBranchCommitRequest request) {
     try {
       githubIntegrationService.createBranchAndCommit(request.userId(), request.repositoryUrl(), request.baseBranch(),
-          request.branchName(), request.commitMessage(), request.files(), request.credentials());
+          request.branchName(), request.commitMessage(), request.files());
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
@@ -84,8 +134,7 @@ public class GithubController {
   @PostMapping("/fetch")
   public ResponseEntity<Void> fetchRepository(@RequestBody GithubFetchRequest request) {
     try {
-      githubIntegrationService.fetchRepository(request.userId(), request.repositoryUrl(), request.branchName(),
-          request.credentials());
+      githubIntegrationService.fetchRepository(request.userId(), request.repositoryUrl(), request.branchName());
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();

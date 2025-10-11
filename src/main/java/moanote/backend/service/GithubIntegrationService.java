@@ -55,18 +55,20 @@ public class GithubIntegrationService {
   private final FileService fileService;
   private final NoteService noteService;
   private final UserDataRepository userDataRepository;
+  private final GithubTokenService githubTokenService;
   private final FileRepository fileRepository;
   private final TextNoteSegmentRepository textNoteSegmentRepository;
   private final Path workspaceRoot;
 
   public GithubIntegrationService(FileService fileService, NoteService noteService,
       UserDataRepository userDataRepository, FileRepository fileRepository,
-      TextNoteSegmentRepository textNoteSegmentRepository) {
+      TextNoteSegmentRepository textNoteSegmentRepository, GithubTokenService githubTokenService) {
     this.fileService = fileService;
     this.noteService = noteService;
     this.userDataRepository = userDataRepository;
     this.fileRepository = fileRepository;
     this.textNoteSegmentRepository = textNoteSegmentRepository;
+    this.githubTokenService = githubTokenService;
     this.workspaceRoot = initializeWorkspaceRoot();
   }
 
@@ -82,12 +84,15 @@ public class GithubIntegrationService {
    * @return 생성된 문서 파일의 DTO 리스트
    */
   @Transactional
-  public List<FileDTO> importRepository(UUID userId, String repositoryUrl, GithubCredentials credentials) {
+  public List<FileDTO> importRepository(UUID userId, String repositoryUrl) {
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(repositoryUrl, "repositoryUrl must not be null");
 
     UserData user = userDataRepository.findById(userId)
         .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+
+    GithubCredentials credentials = githubTokenService.findCredentials(userId)
+        .orElse(GithubCredentials.anonymous());
 
     String repositoryName = resolveRepositoryName(repositoryUrl);
     Path cloneDirectory = prepareLocalRepository(userId, repositoryName);
@@ -253,10 +258,11 @@ public class GithubIntegrationService {
    * @return JGit CredentialsProvider 인스턴스 또는 null
    */
   private CredentialsProvider createCredentialsProvider(GithubCredentials credentials) {
-    if (credentials == null) {
+    if (credentials == null || !credentials.isPresent()) {
       return null;
     }
-    return new UsernamePasswordCredentialsProvider(credentials.username(), credentials.token());
+    String username = credentials.username() != null ? credentials.username() : "oauth2";
+    return new UsernamePasswordCredentialsProvider(username, credentials.token());
   }
 
   /**
@@ -344,16 +350,17 @@ public class GithubIntegrationService {
    * @param branchName     생성할 브랜치 이름
    * @param commitMessage  커밋 메시지
    * @param filesToCommit  커밋에 포함될 파일 내용 (경로, 내용)
-   * @param credentials    인증 정보 (nullable)
    */
   public void createBranchAndCommit(UUID userId, String repositoryUrl, String baseBranch, String branchName,
-      String commitMessage, Map<String, String> filesToCommit, GithubCredentials credentials) {
+      String commitMessage, Map<String, String> filesToCommit) {
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(repositoryUrl, "repositoryUrl must not be null");
     Objects.requireNonNull(baseBranch, "baseBranch must not be null");
     Objects.requireNonNull(branchName, "branchName must not be null");
     Objects.requireNonNull(commitMessage, "commitMessage must not be null");
 
+    GithubCredentials credentials = githubTokenService.findCredentials(userId)
+        .orElse(GithubCredentials.anonymous());
     CredentialsProvider provider = createCredentialsProvider(credentials);
     Path repositoryPath = resolveExistingRepositoryPath(userId, repositoryUrl);
 
@@ -411,13 +418,14 @@ public class GithubIntegrationService {
    * @param userId         저장소 소유자
    * @param repositoryUrl  원격 저장소 URL
    * @param branchName     동기화할 브랜치 이름
-   * @param credentials    인증 정보 (nullable)
    */
   @Transactional
-  public void fetchRepository(UUID userId, String repositoryUrl, String branchName, GithubCredentials credentials) {
+  public void fetchRepository(UUID userId, String repositoryUrl, String branchName) {
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(repositoryUrl, "repositoryUrl must not be null");
     Objects.requireNonNull(branchName, "branchName must not be null");
+    GithubCredentials credentials = githubTokenService.findCredentials(userId)
+        .orElse(GithubCredentials.anonymous());
     CredentialsProvider provider = createCredentialsProvider(credentials);
     UserData user = userDataRepository.findById(userId)
         .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));

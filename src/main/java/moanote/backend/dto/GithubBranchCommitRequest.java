@@ -14,17 +14,19 @@ import java.util.UUID;
  * @param branchName     생성하거나 전환할 브랜치 이름
  * @param commitMessage  커밋 메시지
  * @param files          커밋에 포함될 파일 경로와 내용의 맵
- * @param username       인증용 사용자 이름 (nullable)
- * @param token          인증용 Personal Access Token (nullable)
  */
 public record GithubBranchCommitRequest(UUID userId, String repositoryUrl, String baseBranch, String branchName,
-                                        String commitMessage, Map<String, String> files, String username,
-                                        String token) {
+                                        String commitMessage, Map<String, String> files) {
 
   /**
-   * @return 요청에서 추출한 인증 정보
+   * <pre>
+   *   브랜치 생성/커밋 요청은 더 이상 인증 정보를 포함하지 않으므로 항상 {@code null} 을 반환합니다.
+   *   인증은 {@link moanote.backend.service.GithubTokenService} 가 관리하는 토큰을 사용합니다.
+   * </pre>
+   *
+   * @return 항상 {@code null}
    */
   public GithubCredentials credentials() {
-    return GithubCredentials.fromNullable(username, token);
+    return null;
   }
 }

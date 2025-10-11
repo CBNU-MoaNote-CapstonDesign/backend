@@ -9,15 +9,18 @@ import java.util.UUID;
  *
  * @param userId        파일을 소유할 사용자 식별자
  * @param repositoryUrl GitHub 저장소 URL
- * @param username      인증용 사용자 이름 (nullable)
- * @param token         인증용 Personal Access Token (nullable)
  */
-public record GithubImportRequest(UUID userId, String repositoryUrl, String username, String token) {
+public record GithubImportRequest(UUID userId, String repositoryUrl) {
 
   /**
-   * @return 요청에 포함된 인증 정보를 {@link GithubCredentials} 형태로 반환합니다.
+   * <pre>
+   *   Import 요청은 더 이상 인증 정보를 직접 포함하지 않으므로 항상 {@code null} 을 반환합니다.
+   *   실제 인증은 {@link moanote.backend.service.GithubTokenService} 에 저장된 토큰을 통해 처리됩니다.
+   * </pre>
+   *
+   * @return 항상 {@code null}
    */
   public GithubCredentials credentials() {
-    return GithubCredentials.fromNullable(username, token);
+    return null;
   }
 }
