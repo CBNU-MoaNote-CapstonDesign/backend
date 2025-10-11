@@ -92,6 +92,7 @@ public class CRDTFugueTree {
     Stack<CRDTFugueTreeNode.Side> childrenToVisit = new Stack<>();
 
     visitPath.push(root);
+    operation.accept(root);
     lastVisitChildIterators.push(root.getLeftChildren().iterator());
     childrenToVisit.push(CRDTFugueTreeNode.Side.LEFT);
 
@@ -104,8 +105,10 @@ public class CRDTFugueTree {
       if (iterator.hasNext()) {
         nextNode = iterator.next();
         visitPath.push(nextNode);
+        operation.accept(nextNode);
         lastVisitChildIterators.push(nextNode.getLeftChildren().iterator());
         childrenToVisit.push(CRDTFugueTreeNode.Side.LEFT);
+        continue;
       } else if (side == CRDTFugueTreeNode.Side.LEFT) {
         lastVisitChildIterators.pop();
         lastVisitChildIterators.push(currentNode.getRightChildren().iterator());
@@ -116,8 +119,6 @@ public class CRDTFugueTree {
       visitPath.pop();
       lastVisitChildIterators.pop();
       childrenToVisit.pop();
-
-      operation.accept(currentNode);
     }
   }
 
