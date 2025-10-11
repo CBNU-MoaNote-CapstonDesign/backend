@@ -1,14 +1,11 @@
 package moanote.backend.service;
 
-import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import moanote.backend.BackendApplication;
-import moanote.backend.domain.CRDTFugueTreeNode.Side;
 import moanote.backend.entity.*;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.repository.DiagramNoteSegmentRepository;
-import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import org.junit.jupiter.api.Test;
@@ -50,8 +47,6 @@ class NoteServiceTest {
 
   @Autowired
   private TextNoteSegmentRepository textRepository;
-  @Autowired
-  private FugueNodeRepository fugueNodeRepository;
   @Autowired
   private TextNoteSegmentRepository textNoteSegmentRepository;
 
@@ -95,37 +90,20 @@ class NoteServiceTest {
 
   @Test
   @Transactional
-  void deleteFileCascadeNodes() {
+  void createTextSegmentInitializesAndPersistsPlainText() {
     UserData user = userService.createUser("tester", "tester");
     File file = fileService.createFile(user.getId(), "note", FileType.DOCUMENT);
     Note note = file.getNote();
-    var sText = noteService.createTextNoteSegment(note.getId());
-    var root = sText.getRootNode();
+    TextNoteSegment segment = noteService.createTextNoteSegment(note.getId());
+    textNoteSegmentRepository.saveAndFlush(segment);
 
-    entityManager.persist(sText);
-    entityManager.persist(root);
-    FugueNode n1 = new FugueNode();
-    n1.setSegment(sText);
-    n1.setValue("ok");
-    n1.setId(UuidCreator.getTimeOrderedEpoch().toString());
-    n1.setSide(Side.RIGHT);
-    sText.addNode(n1);
-    root.addChild(n1);
-    entityManager.persist(n1);
+    TextNoteSegment reloaded = textNoteSegmentRepository.findById(segment.getId()).orElseThrow();
+    Assert.isTrue(reloaded.getContent().isEmpty(), "New text segments should start empty");
 
-    FugueNode n2 = new FugueNode();
-    n2.setParent(n1);
-    n2.setSegment(sText);
-    n2.setValue("ok");
-    n2.setId(UuidCreator.getTimeOrderedEpoch().toString());
-    n2.setSide(Side.LEFT);
-    sText.addNode(n2);
-    n1.addChild(n2);
-    entityManager.persist(n2);
-    entityManager.flush();
+    reloaded.updateContent("hello");
+    textNoteSegmentRepository.saveAndFlush(reloaded);
 
-    Assert.isTrue(fugueNodeRepository.findAll().size() == 3, "nodes must be found");
-    fileService.deleteFile(file.getId(), user.getId());
-    Assert.isTrue(fugueNodeRepository.findAll().isEmpty(), "nodes must be deleted");
+    TextNoteSegment updated = textNoteSegmentRepository.findById(segment.getId()).orElseThrow();
+    Assert.isTrue("hello".equals(updated.getContent()), "Updated content must be persisted");
   }
 }

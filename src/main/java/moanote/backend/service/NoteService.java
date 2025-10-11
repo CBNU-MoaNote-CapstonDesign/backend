@@ -11,14 +11,12 @@ import moanote.backend.entity.DiagramNoteSegment;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.FileUserData;
-import moanote.backend.entity.FugueNode;
 import moanote.backend.entity.Note;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.DiagramNoteSegmentRepository;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.FileUserDataRepository;
-import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.NoteRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import moanote.backend.repository.UserDataRepository;
@@ -40,8 +38,6 @@ public class NoteService {
 
   private final DiagramNoteSegmentRepository diagramNoteSegmentRepository;
 
-  private final FugueNodeRepository fugueNodeRepository;
-
   private final EntityManager entityManager;
 
   private final UserDataRepository userDataRepository;
@@ -54,17 +50,16 @@ public class NoteService {
   public NoteService(NoteRepository noteRepository,
       TextNoteSegmentRepository textNoteSegmentRepository,
       DiagramNoteSegmentRepository diagramNoteSegmentRepository,
-      FugueNodeRepository fugueNodeRepository, EntityManager entityManager,
+      EntityManager entityManager,
       UserDataRepository userDataRepository, FileRepository fileRepository,
-      FileUserDataRepository fileUserDataRepository, FileUserDataRepository fileUserDataRepository1) {
+      FileUserDataRepository fileUserDataRepository) {
     this.noteRepository = noteRepository;
     this.textNoteSegmentRepository = textNoteSegmentRepository;
     this.diagramNoteSegmentRepository = diagramNoteSegmentRepository;
-    this.fugueNodeRepository = fugueNodeRepository;
     this.entityManager = entityManager;
     this.userDataRepository = userDataRepository;
     this.fileRepository = fileRepository;
-    this.fileUserDataRepository = fileUserDataRepository1;
+    this.fileUserDataRepository = fileUserDataRepository;
   }
 
   /**
@@ -99,17 +94,9 @@ public class NoteService {
     var note = noteRepository.findNoteById(noteId).orElseThrow();
     var segment = new TextNoteSegment();
     segment.setId(UuidCreator.getTimeOrderedEpoch());
+    segment.updateContent("");
     note.addSegment(segment);
     entityManager.flush();
-
-    FugueNode root = new FugueNode();
-    root.setId("rt");
-    root.setSegment(segment);
-    root.setParent(null);
-    root.setSide(null);
-    root.setValue(null);
-    segment.addNode(root);
-    segment.setRootNode(root);
     return segment;
   }
 

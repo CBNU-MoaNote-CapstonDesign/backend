@@ -370,10 +370,6 @@ public class FileService {
        * 문제: 파일 삭제 중 TextNoteSegment.note 가 null 로 설정되어 not-null 제약 위반.
        */
       for (BaseNoteSegment segment : List.copyOf(note.getSegments())) {
-        if (segment instanceof TextNoteSegment textSegment) {
-          textSegment.setRootNode(null);
-          textSegment.getNodes().clear();
-        }
         entityManager.remove(segment);
       }
       note.getSegments().clear();

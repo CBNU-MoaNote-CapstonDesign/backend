@@ -11,7 +11,6 @@ import moanote.backend.entity.Note.NoteType;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
-import moanote.backend.repository.FugueNodeRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.eclipse.jgit.api.CreateBranchCommand;
@@ -41,8 +40,6 @@ import java.util.stream.Collectors;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import moanote.backend.domain.CRDTFugueTreeNode.Side;
-import moanote.backend.entity.FugueNode;
 
 /**
  * <pre>
@@ -60,18 +57,16 @@ public class GithubIntegrationService {
   private final UserDataRepository userDataRepository;
   private final FileRepository fileRepository;
   private final TextNoteSegmentRepository textNoteSegmentRepository;
-  private final FugueNodeRepository fugueNodeRepository;
   private final Path workspaceRoot;
 
   public GithubIntegrationService(FileService fileService, NoteService noteService,
       UserDataRepository userDataRepository, FileRepository fileRepository,
-      TextNoteSegmentRepository textNoteSegmentRepository, FugueNodeRepository fugueNodeRepository) {
+      TextNoteSegmentRepository textNoteSegmentRepository) {
     this.fileService = fileService;
     this.noteService = noteService;
     this.userDataRepository = userDataRepository;
     this.fileRepository = fileRepository;
     this.textNoteSegmentRepository = textNoteSegmentRepository;
-    this.fugueNodeRepository = fugueNodeRepository;
     this.workspaceRoot = initializeWorkspaceRoot();
   }
 
@@ -211,19 +206,8 @@ public class GithubIntegrationService {
       content = "";
     }
     TextNoteSegment segment = noteService.createTextNoteSegment(importedFile.getNote().getId());
+    segment.updateContent(content);
     textNoteSegmentRepository.saveAndFlush(segment);
-    FugueNode root = segment.getRootNode();
-
-    for (int index = 0; index < content.length(); index++) {
-      String nodeId = String.format("im%08d", index);
-      FugueNode node = new FugueNode();
-      node.setId(nodeId);
-      node.setSegment(segment);
-      node.setParent(root);
-      node.setSide(Side.RIGHT);
-      node.setValue(String.valueOf(content.charAt(index)));
-      fugueNodeRepository.insertNode(node);
-    }
   }
 
   /**
@@ -635,10 +619,6 @@ public class GithubIntegrationService {
   private void resetTextSegments(Note note) {
     List<TextNoteSegment> segments = textNoteSegmentRepository.findAllByNote(note);
     for (TextNoteSegment segment : segments) {
-      List<FugueNode> nodes = fugueNodeRepository.findAllBySegment(segment);
-      if (!nodes.isEmpty()) {
-        fugueNodeRepository.deleteAll(nodes);
-      }
       note.getSegments().remove(segment);
       textNoteSegmentRepository.delete(segment);
     }
