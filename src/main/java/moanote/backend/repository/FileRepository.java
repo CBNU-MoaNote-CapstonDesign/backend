@@ -51,6 +51,7 @@ public interface FileRepository extends JpaRepository<File, UUID> {
     file.setId(UuidCreator.getTimeOrderedEpoch());
     file.setType(type);
     file.setDirectory(directory);
+    file.setGithubImported(false);
     return save(file);
   }
 
@@ -60,6 +61,7 @@ public interface FileRepository extends JpaRepository<File, UUID> {
     file.setId(UuidCreator.getTimeOrderedEpoch());
     file.setType(FileType.DIRECTORY);
     file.setDirectory(null);
+    file.setGithubImported(false);
     return save(file);
   }
 

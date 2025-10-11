@@ -141,6 +141,7 @@ class GithubIntegrationServiceTest {
     scheduleWorkspaceCleanup(user.getId());
 
     assertThat(imported).hasSize(2);
+    assertThat(imported).allMatch(FileDTO::githubImported);
     File root = fileRepository.getRootDirectory(user);
     UUID repositoryId = imported.stream()
         .filter(dto -> dto.name().equals("README.md"))
@@ -150,11 +151,13 @@ class GithubIntegrationServiceTest {
     File repoDirectory = fileRepository.findFileById(repositoryId).orElseThrow();
     assertThat(repoDirectory.getDirectory()).isEqualTo(root);
     assertThat(repoDirectory.getName()).isEqualTo("sample-repo");
+    assertThat(repoDirectory.isGithubImported()).isTrue();
 
     List<File> rootChildren = fileRepository.findFilesByDirectory(repoDirectory);
     assertThat(rootChildren).extracting(File::getName)
         .containsExactlyInAnyOrder("README.md", "src");
     assertThat(rootChildren).extracting(File::getName).doesNotContain("binary.bin");
+    assertThat(rootChildren).allMatch(File::isGithubImported);
 
     File srcDirectory = rootChildren.stream().filter(file -> file.getName().equals("src")).findFirst().orElseThrow();
     List<File> srcFiles = fileRepository.findFilesByDirectory(srcDirectory);
@@ -162,10 +165,12 @@ class GithubIntegrationServiceTest {
     assertThat(mainFile.getType()).isEqualTo(FileType.DOCUMENT);
     assertThat(mainFile.getNote().getType()).isEqualTo(NoteType.CODE);
     assertThat(mainFile.getNote().getCodeLanguage()).isEqualTo(CodeLanguage.JAVA);
+    assertThat(mainFile.isGithubImported()).isTrue();
 
     File readme = rootChildren.stream().filter(file -> file.getName().equals("README.md")).findFirst().orElseThrow();
     assertThat(readme.getNote().getType()).isEqualTo(NoteType.NORMAL);
     assertThat(readme.getNote().getCodeLanguage()).isEqualTo(CodeLanguage.TEXT);
+    assertThat(readme.isGithubImported()).isTrue();
 
     TextNoteSegment segment = textNoteSegmentRepository.findAllByNote(mainFile.getNote()).getFirst();
     assertThat(readSegmentContent(segment)).isEqualTo("class Main {}\n");

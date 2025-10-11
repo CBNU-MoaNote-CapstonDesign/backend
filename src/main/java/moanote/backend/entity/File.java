@@ -15,7 +15,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.OnDelete;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -93,6 +92,9 @@ public class File {
 
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "directory", orphanRemoval = true)
   private Set<File> children = new HashSet<>();
+
+  @Column(name = "github_imported", nullable = false)
+  private boolean githubImported = false;
 
   public void addChild(File file) {
     file.setDirectory(this);

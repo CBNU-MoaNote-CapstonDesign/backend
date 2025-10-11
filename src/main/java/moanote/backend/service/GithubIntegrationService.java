@@ -107,6 +107,7 @@ public class GithubIntegrationService {
       File userRootDirectory = fileRepository.getRootDirectory(user);
       File repositoryDirectory = fileService.createFile(userId, repositoryName, FileType.DIRECTORY,
           userRootDirectory.getId());
+      repositoryDirectory.setGithubImported(true);
 
       Map<Path, File> directoryMapping = new HashMap<>();
       directoryMapping.put(cloneDirectory, repositoryDirectory);
@@ -143,11 +144,17 @@ public class GithubIntegrationService {
   private void handlePath(UUID userId, UserData owner, Path currentPath, Path cloneDirectory,
       Map<Path, File> directoryMapping, List<FileDTO> createdDocuments) {
     processRepositoryEntry(cloneDirectory, currentPath, directoryMapping,
-        (parentDirectory, path) -> fileService.createFile(userId, path.getFileName().toString(), FileType.DIRECTORY,
-            parentDirectory.getId()),
+        (parentDirectory, path) -> {
+          File importedDirectory = fileService.createFile(userId, path.getFileName().toString(),
+              FileType.DIRECTORY,
+              parentDirectory.getId());
+          importedDirectory.setGithubImported(true);
+          return importedDirectory;
+        },
         (parentDirectory, path) -> {
           String filename = path.getFileName().toString();
           File importedFile = fileService.createFile(userId, filename, FileType.DOCUMENT, parentDirectory.getId());
+          importedFile.setGithubImported(true);
           Note note = importedFile.getNote();
           CodeLanguage language = determineLanguage(filename);
           if (language != CodeLanguage.TEXT) {
@@ -597,6 +604,7 @@ public class GithubIntegrationService {
       return existing;
     }
     File created = fileService.createFile(userId, directoryName, FileType.DIRECTORY, parentDirectory.getId());
+    created.setGithubImported(true);
     directoryChildrenCache.computeIfAbsent(parentDirectory.getId(), key -> new HashMap<>())
         .put(directoryName, created);
     return created;
@@ -612,6 +620,7 @@ public class GithubIntegrationService {
       return existing;
     }
     File created = fileService.createFile(userId, filename, FileType.DOCUMENT, parentDirectory.getId());
+    created.setGithubImported(true);
     directoryChildrenCache.computeIfAbsent(parentDirectory.getId(), key -> new HashMap<>())
         .put(filename, created);
     return created;
