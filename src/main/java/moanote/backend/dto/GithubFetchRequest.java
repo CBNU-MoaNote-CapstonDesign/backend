@@ -10,16 +10,18 @@ import java.util.UUID;
  * @param userId         로컬 저장소를 소유한 사용자 식별자
  * @param repositoryUrl  원격 저장소 URL
  * @param branchName     동기화할 브랜치 이름
- * @param username       인증용 사용자 이름 (nullable)
- * @param token          인증용 Personal Access Token (nullable)
  */
-public record GithubFetchRequest(UUID userId, String repositoryUrl, String branchName, String username,
-                                 String token) {
+public record GithubFetchRequest(UUID userId, String repositoryUrl, String branchName) {
 
   /**
-   * @return 요청에 포함된 인증 정보
+   * <pre>
+   *   Fetch 요청은 더 이상 인증 정보를 포함하지 않으므로 항상 {@code null} 을 반환합니다.
+   *   인증은 {@link moanote.backend.service.GithubTokenService} 가 관리하는 토큰을 사용합니다.
+   * </pre>
+   *
+   * @return 항상 {@code null}
    */
   public GithubCredentials credentials() {
-    return GithubCredentials.fromNullable(username, token);
+    return null;
   }
 }

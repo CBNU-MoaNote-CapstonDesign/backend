@@ -7,6 +7,12 @@ agent.name=moa-bot-id
 # FE url
 frontend.url=http://localhost:3000
 
+# GitHub OAuth 설정
+github.oauth.client-id=깃허브_앱_클라이언트_ID
+github.oauth.client-secret=깃허브_앱_클라이언트_시크릿
+github.oauth.redirect-uri=http://localhost:8080/oauth/callback
+github.oauth.scope=repo
+
 # 오픈 AI API 정보 설정
 openai.api.url=오픈_AI_API_요청_주소_입력
 openai.api.key=오픈_AI_API_키값_입력

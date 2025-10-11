@@ -136,7 +136,7 @@ class GithubIntegrationServiceTest {
     UserData user = userService.createUser("github-user", "password");
 
     List<FileDTO> imported = githubIntegrationService.importRepository(user.getId(),
-        remoteRepository.toUri().toString(), null);
+        remoteRepository.toUri().toString());
 
     scheduleWorkspaceCleanup(user.getId());
 
@@ -175,11 +175,11 @@ class GithubIntegrationServiceTest {
   @Transactional
   void createBranchAndCommitPushesToRemote() {
     UserData user = userService.createUser("branch-user", "password");
-    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString(), null);
+    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString());
     scheduleWorkspaceCleanup(user.getId());
 
     githubIntegrationService.createBranchAndCommit(user.getId(), remoteRepository.toUri().toString(), "master",
-        "feature/test", "Add feature", Map.of(REPOSITORY_NAME + "/FEATURE.txt", "new feature"), null);
+        "feature/test", "Add feature", Map.of(REPOSITORY_NAME + "/FEATURE.txt", "new feature"));
 
     try (Git remote = Git.open(remoteRepository.toFile())) {
       assertThat(remote.getRepository().findRef("refs/heads/feature/test")).isNotNull();
@@ -219,7 +219,7 @@ class GithubIntegrationServiceTest {
   @Transactional
   void fetchRepositoryUpdatesRemoteTrackingBranch() throws Exception {
     UserData user = userService.createUser("fetch-user", "password");
-    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString(), null);
+    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString());
     Path localRepository = resolveLocalRepositoryPath(user.getId());
     scheduleWorkspaceCleanup(user.getId());
 
@@ -244,7 +244,7 @@ class GithubIntegrationServiceTest {
     createRemoteCommit("docs/CHANGELOG.md", "entry", "Add changelog");
     createRemoteCommit("README.md", "Updated README\n", "Rewrite README");
 
-    githubIntegrationService.fetchRepository(user.getId(), remoteRepository.toUri().toString(), "master", null);
+    githubIntegrationService.fetchRepository(user.getId(), remoteRepository.toUri().toString(), "master");
 
     try (Git local = Git.open(localRepository.toFile())) {
       ObjectId after = local.getRepository().findRef("refs/remotes/origin/master").getObjectId();
