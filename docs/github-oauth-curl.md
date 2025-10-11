@@ -1,5 +1,14 @@
 # GitHub OAuth 및 연동 API 테스트 cURL 스크립트
 
+## GitHub OAuth 설정 값 안내
+
+| 속성 | 입력해야 하는 값 | 비고 |
+| --- | --- | --- |
+| `github.oauth.client-id` | GitHub OAuth App 등록 페이지에서 확인할 수 있는 **Client ID** | [GitHub OAuth App](https://github.com/settings/developers) 생성 후 발급됩니다. |
+| `github.oauth.client-secret` | GitHub OAuth App 생성 시 발급된 **Client Secret** | 백엔드 서버만 알고 있도록 안전하게 보관하세요. |
+| `github.oauth.redirect-uri` | GitHub OAuth App 에 등록한 **Authorization callback URL** | GitHub 개발자 설정의 Callback URL 과 동일해야 합니다. 예시: `http://localhost:8080/oauth/callback` |
+| `github.oauth.scope` | 액세스 토큰이 접근할 **권한 범위(scope)** | 저장소 조작이 필요하면 `repo` 를 사용합니다. 필요한 권한에 따라 조정 가능합니다. |
+
 > `{{BASE_URL}}` 는 백엔드 서버 주소(예: `http://localhost:8080`)로 치환하세요.
 
 ## 1. Authorization URL 요청
