@@ -139,4 +139,10 @@ public class NoteService {
   public Note getNoteById(UUID noteId) {
     return noteRepository.findNoteById(noteId).orElseThrow();
   }
+
+
+  @Transactional
+  public void deleteNote(UUID noteId) {
+    noteRepository.findById(noteId).ifPresent(noteRepository::delete);
+  }
 }

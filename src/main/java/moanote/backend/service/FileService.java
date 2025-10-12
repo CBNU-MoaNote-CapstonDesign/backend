@@ -1,6 +1,6 @@
 package moanote.backend.service;
 
-import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import jakarta.transaction.Transactional;
 import moanote.backend.dto.CollaboratorDTO;
 import moanote.backend.dto.FileCreateDTO;
@@ -18,9 +18,7 @@ import moanote.backend.repository.FileUserDataRepository;
 import moanote.backend.repository.UserDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import moanote.backend.entity.BaseNoteSegment;
 import moanote.backend.entity.Note;
-import moanote.backend.entity.TextNoteSegment;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,16 +38,13 @@ public class FileService {
 
   private final NoteService noteService;
 
-  private final EntityManager entityManager;
-
   @Autowired
   public FileService(FileRepository fileRepository, UserDataRepository userDataRepository,
-      FileUserDataRepository fileUserDataRepository, NoteService noteService, EntityManager entityManager) {
+      FileUserDataRepository fileUserDataRepository, NoteService noteService) {
     this.fileRepository = fileRepository;
     this.userDataRepository = userDataRepository;
     this.fileUserDataRepository = fileUserDataRepository;
     this.noteService = noteService;
-    this.entityManager = entityManager;
   }
 
   /**
@@ -362,24 +357,20 @@ public class FileService {
     if (!hasAnyPermission(fileId, user.getId())) {
       throw new IllegalArgumentException("User does not have permission to delete this file");
     }
+    traverseFilesRecursively(file, this::deleteFileNode);
+  }
 
+  private void deleteFileNode(File file) {
     Note note = file.getNote();
     if (note != null) {
-      /* Hibernate 가 Note 삭제 시 연관 Segment 의 note 필드를 null 로 설정하면서 발생하는
-       * PropertyValueException 을 피하기 위해, 연관 segment 들을 명시적으로 삭제한다.
-       * 문제: 파일 삭제 중 TextNoteSegment.note 가 null 로 설정되어 not-null 제약 위반.
-       */
-      for (BaseNoteSegment segment : List.copyOf(note.getSegments())) {
-        entityManager.remove(segment);
-      }
-      note.getSegments().clear();
+      UUID noteId = note.getId();
       note.setFile(null);
-      entityManager.remove(note);
       file.setNote(null);
+      noteService.deleteNote(noteId);
     }
-
-    file.getDirectory().removeChild(file);
-    fileRepository.delete(file);
+    UUID fileId = file.getId();
+    fileUserDataRepository.deleteAllByFileId(fileId);
+    fileRepository.deleteById(fileId);
   }
 
   /**
