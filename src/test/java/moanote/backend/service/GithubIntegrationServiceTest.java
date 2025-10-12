@@ -46,6 +46,7 @@ import java.util.UUID;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2, replace = AutoConfigureTestDatabase.Replace.ANY)
 @TestPropertySource("classpath:application.properties")
@@ -192,6 +193,26 @@ class GithubIntegrationServiceTest {
 
     assertThat(repositories)
         .containsExactly(new GithubImportedRepositoryDTO(REPOSITORY_NAME, repositoryUrl));
+  }
+
+  @Test
+  void importingExistingRepositoryFails() {
+    UserData user = userService.createUser("duplicate-user", "password");
+    String repositoryUrl = remoteRepository.toUri().toString();
+
+    githubIntegrationService.importRepository(user.getId(), repositoryUrl);
+    scheduleWorkspaceCleanup(user.getId());
+
+    assertThatThrownBy(() -> githubIntegrationService.importRepository(user.getId(), repositoryUrl))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("already imported");
+
+    assertThat(githubImportedRepositoryRepository.findByUser_Id(user.getId())).hasSize(1);
+    File rootDirectory = fileRepository.getRootDirectory(user);
+    long repositoryCount = fileRepository.findFilesByDirectory(rootDirectory).stream()
+        .filter(file -> file.getName().equals(REPOSITORY_NAME))
+        .count();
+    assertThat(repositoryCount).isEqualTo(1);
   }
 
   @Test

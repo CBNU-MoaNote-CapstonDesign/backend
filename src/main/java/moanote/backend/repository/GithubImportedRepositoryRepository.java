@@ -14,4 +14,13 @@ public interface GithubImportedRepositoryRepository extends JpaRepository<Github
    * @return 해당 사용자가 import 한 저장소 목록
    */
   List<GithubImportedRepository> findByUser_Id(UUID userId);
+
+  /**
+   * 지정한 사용자가 이미 동일한 저장소 URL 을 import 했는지 여부를 확인합니다.
+   *
+   * @param userId        저장소를 import 한 사용자 ID
+   * @param repositoryUrl 중복 여부를 확인할 저장소 URL
+   * @return 이미 import 한 경우 {@code true}
+   */
+  boolean existsByUser_IdAndRepositoryUrl(UUID userId, String repositoryUrl);
 }

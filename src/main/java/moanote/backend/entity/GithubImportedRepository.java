@@ -9,6 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,7 +27,8 @@ import org.hibernate.annotations.OnDeleteAction;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "github_imported_repository")
+@Table(name = "github_imported_repository",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "repository_url"}))
 public class GithubImportedRepository {
 
   @Id

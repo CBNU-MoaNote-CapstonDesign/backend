@@ -97,6 +97,10 @@ public class GithubIntegrationService {
     UserData user = userDataRepository.findById(userId)
         .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
 
+    if (githubImportedRepositoryRepository.existsByUser_IdAndRepositoryUrl(userId, repositoryUrl)) {
+      throw new IllegalArgumentException("Repository already imported: " + repositoryUrl);
+    }
+
     GithubCredentials credentials = githubTokenService.findCredentials(userId)
         .orElse(GithubCredentials.anonymous());
 
