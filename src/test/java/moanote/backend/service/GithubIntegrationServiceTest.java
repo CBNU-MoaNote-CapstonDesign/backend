@@ -2,6 +2,7 @@ package moanote.backend.service;
 
 import moanote.backend.BackendApplication;
 import moanote.backend.dto.FileDTO;
+import moanote.backend.dto.GithubImportedRepositoryDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.Note.CodeLanguage;
@@ -10,6 +11,7 @@ import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
+import moanote.backend.repository.GithubImportedRepositoryRepository;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
@@ -68,6 +70,7 @@ class GithubIntegrationServiceTest {
   private TextNoteSegmentRepository textNoteSegmentRepository;
 
   @Autowired
+  private GithubImportedRepositoryRepository githubImportedRepositoryRepository;
 
   private static final String REPOSITORY_NAME = "sample-repo";
 
@@ -174,6 +177,38 @@ class GithubIntegrationServiceTest {
 
     TextNoteSegment segment = textNoteSegmentRepository.findAllByNote(mainFile.getNote()).getFirst();
     assertThat(readSegmentContent(segment)).isEqualTo("class Main {}\n");
+  }
+
+  @Test
+  void listImportedRepositoriesReturnsMetadata() {
+    UserData user = userService.createUser("list-user", "password");
+    String repositoryUrl = remoteRepository.toUri().toString();
+
+    githubIntegrationService.importRepository(user.getId(), repositoryUrl);
+    scheduleWorkspaceCleanup(user.getId());
+
+    List<GithubImportedRepositoryDTO> repositories =
+        githubIntegrationService.listImportedRepositories(user.getId());
+
+    assertThat(repositories)
+        .containsExactly(new GithubImportedRepositoryDTO(REPOSITORY_NAME, repositoryUrl));
+  }
+
+  @Test
+  void deletingImportedRepositoryRemovesMetadata() {
+    UserData user = userService.createUser("cleanup-user", "password");
+    String repositoryUrl = remoteRepository.toUri().toString();
+
+    githubIntegrationService.importRepository(user.getId(), repositoryUrl);
+    scheduleWorkspaceCleanup(user.getId());
+
+    assertThat(githubImportedRepositoryRepository.findByUser_Id(user.getId())).hasSize(1);
+
+    File repositoryDirectory = findImportedRepositoryDirectory(user);
+    fileService.deleteFile(repositoryDirectory.getId(), user.getId());
+    githubImportedRepositoryRepository.flush();
+
+    assertThat(githubImportedRepositoryRepository.findByUser_Id(user.getId())).isEmpty();
   }
 
   @Test
@@ -330,5 +365,13 @@ class GithubIntegrationServiceTest {
   private String readSegmentContent(TextNoteSegment segment) {
     TextNoteSegment reloaded = textNoteSegmentRepository.findById(segment.getId()).orElseThrow();
     return reloaded.getContent();
+  }
+
+  private File findImportedRepositoryDirectory(UserData user) {
+    File rootDirectory = fileRepository.getRootDirectory(user);
+    return fileRepository.findFilesByDirectory(rootDirectory).stream()
+        .filter(file -> file.getName().equals(REPOSITORY_NAME))
+        .findFirst()
+        .orElseThrow();
   }
 }
