@@ -4,19 +4,23 @@ import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.GithubBranchCommitRequest;
 import moanote.backend.dto.GithubFetchRequest;
 import moanote.backend.dto.GithubImportRequest;
+import moanote.backend.dto.GithubImportedRepositoryDTO;
 import moanote.backend.dto.GithubOAuthAuthorizeRequest;
 import moanote.backend.dto.GithubOAuthAuthorizeResponse;
 import moanote.backend.dto.GithubOAuthCallbackRequest;
 import moanote.backend.service.GithubIntegrationService;
 import moanote.backend.service.GithubOAuthService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 /**
  * <pre>
@@ -101,6 +105,30 @@ public class GithubController {
       return ResponseEntity.internalServerError().build();
     }
   }
+
+  /**
+   * <pre>
+   *   사용자가 가져온 GitHub 저장소의 목록을 반환합니다.
+   * </pre>
+   *
+   * @param userId 저장소를 가져온 사용자 ID
+   * @return 저장소 이름과 URL 목록
+   */
+  @GetMapping("/imports")
+  public ResponseEntity<List<GithubImportedRepositoryDTO>> listImportedRepositories(
+      @RequestParam("userId") UUID userId) {
+    try {
+      List<GithubImportedRepositoryDTO> repositories = githubIntegrationService.listImportedRepositories(userId);
+      return ResponseEntity.ok(repositories);
+    } catch (NoSuchElementException e) {
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().build();
+    }
+  }
+
 
   /**
    * <pre>

@@ -3,6 +3,7 @@ package moanote.backend.service;
 import jakarta.transaction.Transactional;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.GithubCredentials;
+import moanote.backend.dto.GithubImportedRepositoryDTO;
 import moanote.backend.entity.File;
 import moanote.backend.entity.File.FileType;
 import moanote.backend.entity.Note;
@@ -10,9 +11,11 @@ import moanote.backend.entity.Note.CodeLanguage;
 import moanote.backend.entity.Note.NoteType;
 import moanote.backend.entity.TextNoteSegment;
 import moanote.backend.entity.UserData;
+import moanote.backend.entity.GithubImportedRepository;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import moanote.backend.repository.UserDataRepository;
+import moanote.backend.repository.GithubImportedRepositoryRepository;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -59,16 +62,19 @@ public class GithubIntegrationService {
   private final FileRepository fileRepository;
   private final TextNoteSegmentRepository textNoteSegmentRepository;
   private final Path workspaceRoot;
+  private final GithubImportedRepositoryRepository githubImportedRepositoryRepository;
 
   public GithubIntegrationService(FileService fileService, NoteService noteService,
       UserDataRepository userDataRepository, FileRepository fileRepository,
-      TextNoteSegmentRepository textNoteSegmentRepository, GithubTokenService githubTokenService) {
+      TextNoteSegmentRepository textNoteSegmentRepository, GithubTokenService githubTokenService,
+      GithubImportedRepositoryRepository githubImportedRepositoryRepository) {
     this.fileService = fileService;
     this.noteService = noteService;
     this.userDataRepository = userDataRepository;
     this.fileRepository = fileRepository;
     this.textNoteSegmentRepository = textNoteSegmentRepository;
     this.githubTokenService = githubTokenService;
+    this.githubImportedRepositoryRepository = githubImportedRepositoryRepository;
     this.workspaceRoot = initializeWorkspaceRoot();
   }
 
@@ -108,7 +114,8 @@ public class GithubIntegrationService {
       File repositoryDirectory = fileService.createFile(userId, repositoryName, FileType.DIRECTORY,
           userRootDirectory.getId());
       repositoryDirectory.setGithubImported(true);
-
+      githubImportedRepositoryRepository.save(
+          new GithubImportedRepository(repositoryDirectory, user, repositoryName, repositoryUrl));
       Map<Path, File> directoryMapping = new HashMap<>();
       directoryMapping.put(cloneDirectory, repositoryDirectory);
 
@@ -129,6 +136,25 @@ public class GithubIntegrationService {
     }
   }
 
+  /**
+   * <pre>
+   *   사용자가 GitHub Import 를 통해 추가한 저장소 정보를 조회합니다.
+   *   사용자 존재 여부를 검증한 뒤 저장된 메타데이터를 DTO 로 변환하여 반환합니다.
+   * </pre>
+   *
+   * @param userId 저장소를 조회할 사용자 ID
+   * @return 저장소 이름과 URL 을 포함한 DTO 목록
+   */
+  public List<GithubImportedRepositoryDTO> listImportedRepositories(UUID userId) {
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+
+    return githubImportedRepositoryRepository.findByUser_Id(userId).stream()
+        .map(entity -> new GithubImportedRepositoryDTO(entity.getRepositoryName(), entity.getRepositoryUrl()))
+        .collect(Collectors.toList());
+  }
   /**
    * <pre>
    *   클론된 저장소의 개별 경로를 순회하면서 디렉터리 매핑을 유지하고 텍스트 파일을 DB 엔터티로 변환합니다.
