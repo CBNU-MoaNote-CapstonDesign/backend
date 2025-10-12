@@ -114,7 +114,7 @@ public class GithubController {
    * @param userId 저장소를 가져온 사용자 ID
    * @return 저장소 이름과 URL 목록
    */
-  @GetMapping("/imports")
+  @GetMapping("/listImported")
   public ResponseEntity<List<GithubImportedRepositoryDTO>> listImportedRepositories(
       @RequestParam("userId") UUID userId) {
     try {
