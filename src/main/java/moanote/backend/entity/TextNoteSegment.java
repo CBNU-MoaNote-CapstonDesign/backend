@@ -16,7 +16,7 @@ import lombok.Setter;
 public class TextNoteSegment extends BaseNoteSegment {
 
   @Lob
-  @Column(name = "content", nullable = false)
+  @Column(name = "content", nullable = false, columnDefinition = "LONGTEXT")
   private String content = "";
 
   /**
