@@ -86,7 +86,6 @@ public class GithubIntegrationService {
    *
    * @param userId        파일을 생성할 사용자
    * @param repositoryUrl 가져올 GitHub 저장소 URL
-   * @param credentials   인증 정보 (nullable)
    * @return 생성된 문서 파일의 DTO 리스트
    */
   @Transactional
@@ -483,6 +482,15 @@ public class GithubIntegrationService {
     synchronizeRepository(userId, repositoryPath, repositoryDirectory);
   }
 
+  public Path resolveExistingRepositoryPath(UUID userId, String repositoryUrl) {
+    String repositoryName = resolveRepositoryName(repositoryUrl);
+    Path repositoryPath = workspaceRoot.resolve(userId.toString()).resolve(repositoryName);
+    if (Files.notExists(repositoryPath)) {
+      throw new IllegalArgumentException("Local repository not found at " + repositoryPath);
+    }
+    return repositoryPath;
+  }
+
   private Path initializeWorkspaceRoot() {
     Path root = Paths.get(System.getProperty("java.io.tmpdir"), "moanote-github-workspace");
     try {
@@ -506,15 +514,6 @@ public class GithubIntegrationService {
       Files.createDirectories(repositoryPath);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to prepare repository directory", e);
-    }
-    return repositoryPath;
-  }
-
-  private Path resolveExistingRepositoryPath(UUID userId, String repositoryUrl) {
-    String repositoryName = resolveRepositoryName(repositoryUrl);
-    Path repositoryPath = workspaceRoot.resolve(userId.toString()).resolve(repositoryName);
-    if (Files.notExists(repositoryPath)) {
-      throw new IllegalArgumentException("Local repository not found at " + repositoryPath);
     }
     return repositoryPath;
   }
