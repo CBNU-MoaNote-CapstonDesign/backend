@@ -1,7 +1,8 @@
 spring.application.name=backend
 server.port=스프링_서버_포트_번호_입력
 
-# AI agent 설정
+# 코드베이스 탐색기 API 설정
+codebaseExplorer.api.url=localhost:3030
 agent.api.url=localhost:8000
 agent.name=moa-bot-id
 # FE url
