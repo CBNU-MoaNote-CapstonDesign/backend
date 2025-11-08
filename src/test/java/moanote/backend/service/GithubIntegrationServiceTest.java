@@ -117,7 +117,10 @@ class GithubIntegrationServiceTest {
   @AfterEach
   void tearDown() throws IOException {
     cleanupTargets.add(workspace);
-    cleanupTargets.add(Paths.get(System.getProperty("java.io.tmpdir"), "moanote-github-workspace"));
+    Path serviceWorkspace = workspaceRoot();
+    if (serviceWorkspace != null) {
+      cleanupTargets.add(serviceWorkspace);
+    }
     for (Path path : cleanupTargets) {
       if (path != null && Files.exists(path)) {
         try (var paths = Files.walk(path)) {
@@ -370,8 +373,11 @@ class GithubIntegrationServiceTest {
   }
 
   private Path resolveLocalRepositoryPath(UUID userId) {
-    return Paths.get(System.getProperty("java.io.tmpdir"), "moanote-github-workspace", userId.toString(),
-        REPOSITORY_NAME);
+    Path root = workspaceRoot();
+    if (root == null) {
+      throw new IllegalStateException("workspaceRoot was not initialized");
+    }
+    return root.resolve(userId.toString()).resolve(REPOSITORY_NAME);
   }
 
   private void scheduleWorkspaceCleanup(UUID userId) {
@@ -381,6 +387,10 @@ class GithubIntegrationServiceTest {
     if (userWorkspace != null) {
       cleanupTargets.add(userWorkspace);
     }
+  }
+
+  private Path workspaceRoot() {
+    return (Path) ReflectionTestUtils.getField(githubIntegrationService, "workspaceRoot");
   }
 
   private String readSegmentContent(TextNoteSegment segment) {

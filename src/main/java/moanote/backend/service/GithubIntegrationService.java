@@ -498,7 +498,16 @@ public class GithubIntegrationService {
   }
 
   private Path initializeWorkspaceRoot() {
-    Path root = Paths.get(System.getProperty("java.io.tmpdir"), "moanote-github-workspace");
+    String configuredPath = System.getenv("MOANOTE_GITHUB_WORKSPACE");
+    if (configuredPath == null || configuredPath.isBlank()) {
+      configuredPath = System.getProperty("moanote.github.workspace");
+    }
+
+    Path root = (configuredPath == null || configuredPath.isBlank())
+        ? Paths.get(System.getProperty("user.home"), ".moanote", "github-workspace")
+        : Paths.get(configuredPath);
+
+    root = root.toAbsolutePath().normalize();
     try {
       Files.createDirectories(root);
     } catch (IOException e) {
