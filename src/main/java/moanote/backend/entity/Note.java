@@ -47,7 +47,9 @@ public class Note {
     JAVASCRIPT("JAVASCRIPT", 4),
     JAVASCRIPT_JSX("JAVASCRIPT_JSX", 5),
     TYPESCRIPT("TYPESCRIPT", 6),
-    TYPESCRIPT_JSX("TYPESCRIPT_JSX", 7);
+    TYPESCRIPT_JSX("TYPESCRIPT_JSX", 7),
+    C("C", 8),
+    CPP("CPP", 9);
 
     private final String name;
     private final int value;

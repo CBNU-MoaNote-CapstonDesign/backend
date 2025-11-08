@@ -282,6 +282,12 @@ public class GithubIntegrationService {
     if (lower.endsWith(".js")) {
       return CodeLanguage.JAVASCRIPT;
     }
+    if (lower.endsWith(".c") || lower.endsWith(".h")) {
+      return CodeLanguage.C;
+    }
+    if (lower.endsWith(".cpp") || lower.endsWith(".hpp") || lower.endsWith(".cc")) {
+      return CodeLanguage.CPP;
+    }
     return CodeLanguage.TEXT;
   }
 
