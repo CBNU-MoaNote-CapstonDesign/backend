@@ -50,16 +50,6 @@ public class TestController {
       users.add(userService.createUser("sa", password));
       users.add(userService.createUser("son", password));
 
-
-      for (int i = 0; i < users.size(); i++) {
-        notes.add(fileService.createFile(users.get(i).getId(), "노트" + i, FileType.DOCUMENT));
-        for (int j = 0; j < users.size(); j++) {
-          if (i != j) {
-            fileService.grantPermission(notes.get(i).getId(), users.get(j).getId(), Permission.valueOf("WRITE"));
-          }
-        }
-      }
-
       users.add(userService.createUser(AGENT_NAME, password));
 
       return "<html><body><h1>테스트 데이터 주입 완료</h1></body></html>";
@@ -67,25 +57,5 @@ public class TestController {
       System.out.println(e.getMessage());
       return "<html><body><h1>오류 발생</h1></body></html>";
     }
-  }
-
-  /**
-   * DB에 주입한 테스트 데이터 삭제하는 기능
-   *
-   * @return 결과 HTML
-   */
-  @GetMapping("/cancelDB")
-  public String cancelDB() {
-    return "<html><body><h1>삭제된 API 입니다.</h1></body></html>";
-  }
-
-  /**
-   * DB에 저장된 모든 레코드를 지우는 기능
-   *
-   * @return 결과 HTML
-   */
-  @GetMapping("/resetDB")
-  public String resetDB() {
-    return "<html><body><h1>삭제된 API 입니다.</h1></body></html>";
   }
 }
