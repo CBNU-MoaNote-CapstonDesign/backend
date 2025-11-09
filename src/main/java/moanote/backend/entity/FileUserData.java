@@ -33,7 +33,8 @@ public class FileUserData {
     READ("READ", 0),
     WRITE("WRITE", 1),
     DELETE("DELETE", 2),
-    OWNER("OWNER", 3);
+    OWNER("OWNER", 3),
+    NONE("NONE", -1);
 
     private final String permission;
     private final int value;

@@ -6,7 +6,9 @@ import moanote.backend.dto.FileCreateDTO;
 import moanote.backend.dto.FileDTO;
 import moanote.backend.dto.FileEditDTO;
 import moanote.backend.dto.ShareFileDTO;
+import moanote.backend.entity.FileUserData.Permission;
 import moanote.backend.service.FileService;
+import moanote.backend.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -137,6 +139,24 @@ public class FileController {
       @RequestParam(name = "user") UUID userId, @RequestBody ShareFileDTO shareFileDTO) {
     try {
       fileService.shareFile(fileId, userId, shareFileDTO);
+      return ResponseEntity.noContent().build();
+    } catch (NoSuchElementException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(403).build();
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      return ResponseEntity.status(500).build();
+    }
+  }
+
+  @PostMapping("/unshare/{fileId}")
+  public ResponseEntity<Void> unshareFile(@PathVariable UUID fileId,
+      @RequestParam(name = "user") UUID userId, @RequestParam(name = "targetUser") String targetUsername) {
+    try {
+      fileService.shareFile(fileId, userId, new ShareFileDTO(targetUsername, Permission.NONE));
       return ResponseEntity.noContent().build();
     } catch (NoSuchElementException e) {
       System.out.println(e.getMessage());

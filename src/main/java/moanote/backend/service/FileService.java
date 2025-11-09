@@ -149,6 +149,7 @@ public class FileService {
 
   /**
    * 특정 File 의 특정 User 가 가진 permission 을 생성, 혹은 이미 존재하는 경우 permission 을 업데이트합니다.
+   * 만약 permission 이 NONE 으로 설정된 경우, 기존의 permission 을 삭제합니다.
    *
    * @param fileId     permission 을 부여할 File 의 id
    * @param userId     permission 을 부여할 User 의 id
@@ -170,6 +171,11 @@ public class FileService {
 
     if (oldPermission.getPermission() == FileUserData.Permission.OWNER) {
       throw new IllegalArgumentException("Cannot change permission of owner");
+    }
+
+    if (permission == Permission.NONE) {
+      fileUserDataRepository.delete(oldPermission);
+      return file;
     }
     oldPermission.setPermission(permission);
     fileUserDataRepository.save(oldPermission);
