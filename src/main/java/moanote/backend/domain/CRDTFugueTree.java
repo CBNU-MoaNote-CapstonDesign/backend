@@ -60,11 +60,13 @@ public class CRDTFugueTree {
    */
   private void populateFromPlainText(String plainText) {
     String normalized = plainText == null ? "" : plainText;
+    CRDTFugueTreeNode currentNode = root;
     for (int index = 0; index < normalized.length(); index++) {
       String nodeId = String.format("pl%08d", index);
       CRDTFugueTreeNode node = new CRDTFugueTreeNode(nodeId, String.valueOf(normalized.charAt(index)));
-      root.addNode(Side.RIGHT, node);
+      currentNode.addNode(Side.RIGHT, node);
       nodes.put(nodeId, node);
+      currentNode = node;
     }
   }
 
