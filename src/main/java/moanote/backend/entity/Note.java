@@ -39,6 +39,9 @@ public class Note {
     }
   }
 
+  /**
+   * 해당 enum 을 수정하면 DB 및 Service.GithubIntegrationService#determineLanguage 또한 함께 수정해야 합니다.
+   */
   public enum CodeLanguage {
     TEXT("TEXT", 0),
     JAVA("JAVA", 1),
@@ -49,7 +52,11 @@ public class Note {
     TYPESCRIPT("TYPESCRIPT", 6),
     TYPESCRIPT_JSX("TYPESCRIPT_JSX", 7),
     C("C", 8),
-    CPP("CPP", 9);
+    CPP("CPP", 9),
+    JSON("JSON", 10),
+    HTML("HTML", 11),
+    CSS("CSS", 12),
+    MARKDOWN("MARKDOWN", 13);
 
     private final String name;
     private final int value;

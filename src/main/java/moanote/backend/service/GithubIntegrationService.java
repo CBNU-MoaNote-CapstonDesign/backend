@@ -288,6 +288,18 @@ public class GithubIntegrationService {
     if (lower.endsWith(".cpp") || lower.endsWith(".hpp") || lower.endsWith(".cc")) {
       return CodeLanguage.CPP;
     }
+    if (lower.endsWith(".json")) {
+      return CodeLanguage.JSON;
+    }
+    if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+      return CodeLanguage.HTML;
+    }
+    if (lower.endsWith(".css")) {
+      return CodeLanguage.CSS;
+    }
+    if (lower.endsWith(".md")) {
+      return CodeLanguage.MARKDOWN;
+    }
     return CodeLanguage.TEXT;
   }
 
