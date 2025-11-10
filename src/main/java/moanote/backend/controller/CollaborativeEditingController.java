@@ -3,6 +3,7 @@ package moanote.backend.controller;
 import com.github.f4b6a3.uuid.util.UuidValidator;
 import moanote.backend.domain.LWWNoteContent;
 import moanote.backend.dto.CRDTOperationDTO;
+import moanote.backend.dto.CaretDTO;
 import moanote.backend.dto.LWWStateDTO;
 import moanote.backend.dto.TextEditParticipateDTO;
 import moanote.backend.service.LWWCollaborativeEditingService;
@@ -118,5 +119,13 @@ public class CollaborativeEditingController {
     }
     return textCollaborativeEditingService.participateSession(UUID.fromString(participantUserId),
         UUID.fromString(noteId));
+  }
+
+  @MessageMapping("/docs/text/caret/{noteId}/{segmentId}")
+  @SendTo("/topic/docs/caret/{noteId}/{segmentId}")
+  public Object editingDocs(CaretDTO caretDTO,
+      @DestinationVariable("segmentId") UUID segmentId,
+      @DestinationVariable("noteId") UUID noteId) {
+    return caretDTO;
   }
 }
