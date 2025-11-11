@@ -1,6 +1,27 @@
 spring.application.name=backend
 server.port=스프링_서버_포트_번호_입력
 
+# 코드베이스 탐색기 API 설정
+codebaseExplorer.api.url=localhost:3030
+agent.api.url=localhost:8000
+agent.name=moa-bot-id
+# FE url
+frontend.url=http://localhost:3000
+
+# GitHub OAuth 설정
+# GitHub OAuth 앱 등록 페이지에서 발급받은 Client ID 를 입력합니다.
+github.oauth.client-id=깃허브_앱_클라이언트_ID
+# GitHub OAuth 앱 등록 페이지에서 발급받은 Client Secret 을 입력합니다.
+github.oauth.client-secret=깃허브_앱_클라이언트_시크릿
+# GitHub OAuth 앱에 등록한 Authorization callback URL 과 동일하게 맞춰야 합니다.
+github.oauth.redirect-uri=http://localhost:8080/oauth/callback
+# 토큰이 접근할 GitHub 권한 범위입니다. 기본값은 저장소 접근이 가능한 repo 권한입니다.
+github.oauth.scope=repo
+# Authorization state 를 유지할 시간입니다. 기본적으로 10분 동안 유효합니다.
+github.oauth.state-ttl=10m
+# 액세스 토큰을 메모리에 유지할 시간입니다. 기본적으로 1시간 동안 유효합니다.
+github.oauth.token-ttl=1h
+
 # 오픈 AI API 정보 설정
 openai.api.url=오픈_AI_API_요청_주소_입력
 openai.api.key=오픈_AI_API_키값_입력
