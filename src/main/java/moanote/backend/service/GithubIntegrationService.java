@@ -395,6 +395,13 @@ public class GithubIntegrationService {
     }
   }
 
+  public FileDTO getRepositoryRootDirectory(UUID userId, String repositoryName) {
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+    File repositoryDirectory = resolveRepositoryDirectory(user, repositoryName);
+    return new FileDTO(repositoryDirectory, user);
+  }
+
   /**
    * <pre>
    *   로컬 작업 공간에 저장된 저장소에서 새로운 브랜치를 생성하고 커밋 및 푸시를 수행합니다.

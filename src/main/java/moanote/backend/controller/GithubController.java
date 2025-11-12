@@ -170,4 +170,19 @@ public class GithubController {
       return ResponseEntity.internalServerError().build();
     }
   }
+
+  @GetMapping("/repository/file")
+  public ResponseEntity<FileDTO> getRepository(@RequestParam("userId") UUID userId,
+      @RequestParam("repositoryName") String repositoryName) {
+    try {
+      FileDTO repository = githubIntegrationService.getRepositoryRootDirectory(userId, repositoryName);
+      return ResponseEntity.ok(repository);
+    } catch (NoSuchElementException e) {
+      return ResponseEntity.status(404).build();
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().build();
+    }
+  }
 }
