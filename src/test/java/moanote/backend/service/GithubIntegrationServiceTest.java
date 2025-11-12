@@ -175,8 +175,8 @@ class GithubIntegrationServiceTest {
     assertThat(mainFile.isGithubImported()).isTrue();
 
     File readme = rootChildren.stream().filter(file -> file.getName().equals("README.md")).findFirst().orElseThrow();
-    assertThat(readme.getNote().getType()).isEqualTo(NoteType.NORMAL);
-    assertThat(readme.getNote().getCodeLanguage()).isEqualTo(CodeLanguage.TEXT);
+    assertThat(readme.getNote().getType()).isEqualTo(NoteType.CODE);
+    assertThat(readme.getNote().getCodeLanguage()).isEqualTo(CodeLanguage.MARKDOWN);
     assertThat(readme.isGithubImported()).isTrue();
 
     TextNoteSegment segment = textNoteSegmentRepository.findAllByNote(mainFile.getNote()).getFirst();
