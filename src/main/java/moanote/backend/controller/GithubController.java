@@ -142,7 +142,7 @@ public class GithubController {
   public ResponseEntity<Void> createBranchAndCommit(@RequestBody GithubBranchCommitRequest request) {
     try {
       githubIntegrationService.createBranchAndCommit(request.userId(), request.repositoryUrl(), request.baseBranch(),
-          request.branchName(), request.commitMessage(), request.files());
+          request.branchName(), request.commitMessage(), request.fileIds());
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();

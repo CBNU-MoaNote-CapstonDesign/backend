@@ -1,6 +1,6 @@
 package moanote.backend.dto;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,10 +13,10 @@ import java.util.UUID;
  * @param baseBranch     새 브랜치 생성 시 기준이 되는 브랜치 이름
  * @param branchName     생성하거나 전환할 브랜치 이름
  * @param commitMessage  커밋 메시지
- * @param files          커밋에 포함될 파일 경로와 내용의 맵
+ * @param fileIds        커밋에 포함될 파일을 나타내는 UUID 목록
  */
 public record GithubBranchCommitRequest(UUID userId, String repositoryUrl, String baseBranch, String branchName,
-                                        String commitMessage, Map<String, String> files) {
+                                        String commitMessage, List<UUID> fileIds) {
 
   /**
    * <pre>

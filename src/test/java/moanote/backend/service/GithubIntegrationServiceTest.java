@@ -12,6 +12,7 @@ import moanote.backend.entity.UserData;
 import moanote.backend.repository.FileRepository;
 import moanote.backend.repository.TextNoteSegmentRepository;
 import moanote.backend.repository.GithubImportedRepositoryRepository;
+import moanote.backend.repository.FileUserDataRepository;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
@@ -41,7 +42,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -72,6 +72,9 @@ class GithubIntegrationServiceTest {
 
   @Autowired
   private GithubImportedRepositoryRepository githubImportedRepositoryRepository;
+
+  @Autowired
+  private FileUserDataRepository fileUserDataRepository;
 
   private static final String REPOSITORY_NAME = "sample-repo";
 
@@ -242,8 +245,29 @@ class GithubIntegrationServiceTest {
     githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString());
     scheduleWorkspaceCleanup(user.getId());
 
+    File repositoryDirectory = findImportedRepositoryDirectory(user);
+    File readmeFile = fileRepository.findFilesByDirectory(repositoryDirectory).stream()
+        .filter(file -> file.getName().equals("README.md"))
+        .findFirst()
+        .orElseThrow();
+    TextNoteSegment readmeSegment = textNoteSegmentRepository.findAllByNote(readmeFile.getNote()).getFirst();
+    readmeSegment.updateContent("New README\n");
+    textNoteSegmentRepository.saveAndFlush(readmeSegment);
+
+    File srcDirectory = fileRepository.findFilesByDirectory(repositoryDirectory).stream()
+        .filter(file -> file.getName().equals("src"))
+        .findFirst()
+        .orElseThrow();
+    File mainJava = fileRepository.findFilesByDirectory(srcDirectory).stream()
+        .filter(file -> file.getName().equals("Main.java"))
+        .findFirst()
+        .orElseThrow();
+    TextNoteSegment mainSegment = textNoteSegmentRepository.findAllByNote(mainJava.getNote()).getFirst();
+    mainSegment.updateContent("class Main { void run() {} }\n");
+    textNoteSegmentRepository.saveAndFlush(mainSegment);
+
     githubIntegrationService.createBranchAndCommit(user.getId(), remoteRepository.toUri().toString(), "master",
-        "feature/test", "Add feature", Map.of(REPOSITORY_NAME + "/FEATURE.txt", "new feature"));
+        "feature/test", "Add feature", List.of(readmeFile.getId(), mainJava.getId()));
 
     try (Git remote = Git.open(remoteRepository.toFile())) {
       assertThat(remote.getRepository().findRef("refs/heads/feature/test")).isNotNull();
@@ -258,10 +282,76 @@ class GithubIntegrationServiceTest {
 
     try (Git local = Git.open(resolveLocalRepositoryPath(user.getId()).toFile())) {
       assertThat(local.getRepository().getFullBranch()).isEqualTo("refs/heads/feature/test");
-      assertThat(Files.exists(resolveLocalRepositoryPath(user.getId()).resolve("FEATURE.txt"))).isTrue();
+      Path localRepository = resolveLocalRepositoryPath(user.getId());
+      assertThat(Files.readString(localRepository.resolve("README.md"), StandardCharsets.UTF_8))
+          .isEqualTo("New README\n");
+      assertThat(Files.readString(localRepository.resolve(Paths.get("src", "Main.java")), StandardCharsets.UTF_8))
+          .isEqualTo("class Main { void run() {} }\n");
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  @Test
+  @Transactional
+  void createBranchAndCommitAllowsEmptyFileList() {
+    UserData user = userService.createUser("empty-commit-user", "password");
+    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString());
+    scheduleWorkspaceCleanup(user.getId());
+
+    githubIntegrationService.createBranchAndCommit(user.getId(), remoteRepository.toUri().toString(), "master",
+        "feature/empty", "Empty commit", List.of());
+
+    try (Git remote = Git.open(remoteRepository.toFile())) {
+      assertThat(remote.getRepository().findRef("refs/heads/feature/empty")).isNotNull();
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  @Test
+  @Transactional
+  void createBranchAndCommitRejectsDirectory() {
+    UserData user = userService.createUser("directory-user", "password");
+    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString());
+    scheduleWorkspaceCleanup(user.getId());
+
+    File repositoryDirectory = findImportedRepositoryDirectory(user);
+
+    assertThatThrownBy(() -> githubIntegrationService.createBranchAndCommit(user.getId(),
+        remoteRepository.toUri().toString(), "master", "feature/dir", "Invalid", List.of(repositoryDirectory.getId())))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("document files");
+  }
+
+  @Test
+  @Transactional
+  void createBranchAndCommitRejectsFileOutsideRepository() {
+    UserData user = userService.createUser("outside-user", "password");
+    githubIntegrationService.importRepository(user.getId(), remoteRepository.toUri().toString());
+    scheduleWorkspaceCleanup(user.getId());
+
+    File external = fileService.createFile(user.getId(), "External.txt", FileType.DOCUMENT);
+
+    assertThatThrownBy(() -> githubIntegrationService.createBranchAndCommit(user.getId(),
+        remoteRepository.toUri().toString(), "master", "feature/outside", "Invalid", List.of(external.getId())))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("repository");
+  }
+
+  @Test
+  @Transactional
+  void createBranchAndCommitRequiresPermission() {
+    UserData owner = userService.createUser("permission-owner", "password");
+    githubIntegrationService.importRepository(owner.getId(), remoteRepository.toUri().toString());
+    scheduleWorkspaceCleanup(owner.getId());
+
+    UserData otherUser = userService.createUser("permission-other", "password");
+
+    assertThatThrownBy(() -> githubIntegrationService.createBranchAndCommit(otherUser.getId(),
+        remoteRepository.toUri().toString(), "master", "feature/permission", "Invalid", List.of(UUID.randomUUID())))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Repository not imported for user");
   }
 
   @Test
