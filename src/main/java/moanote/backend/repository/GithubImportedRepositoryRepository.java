@@ -1,6 +1,7 @@
 package moanote.backend.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import moanote.backend.entity.GithubImportedRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,4 +24,13 @@ public interface GithubImportedRepositoryRepository extends JpaRepository<Github
    * @return 이미 import 한 경우 {@code true}
    */
   boolean existsByUser_IdAndRepositoryUrl(UUID userId, String repositoryUrl);
+
+  /**
+   * 지정한 사용자와 저장소 URL 조합에 해당하는 import 메타데이터를 조회합니다.
+   *
+   * @param userId        저장소를 import 한 사용자 ID
+   * @param repositoryUrl 조회할 저장소 URL
+   * @return 매칭되는 {@link GithubImportedRepository} 또는 존재하지 않는 경우 빈 Optional
+   */
+  Optional<GithubImportedRepository> findByUser_IdAndRepositoryUrl(UUID userId, String repositoryUrl);
 }

@@ -142,7 +142,7 @@ public class GithubController {
   public ResponseEntity<Void> createBranchAndCommit(@RequestBody GithubBranchCommitRequest request) {
     try {
       githubIntegrationService.createBranchAndCommit(request.userId(), request.repositoryUrl(), request.baseBranch(),
-          request.branchName(), request.commitMessage(), request.files());
+          request.branchName(), request.commitMessage(), request.fileIds());
       return ResponseEntity.noContent().build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
@@ -164,6 +164,21 @@ public class GithubController {
     try {
       githubIntegrationService.fetchRepository(request.userId(), request.repositoryUrl(), request.branchName());
       return ResponseEntity.noContent().build();
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().build();
+    }
+  }
+
+  @GetMapping("/repository/file")
+  public ResponseEntity<FileDTO> getRepository(@RequestParam("userId") UUID userId,
+      @RequestParam("repositoryName") String repositoryName) {
+    try {
+      FileDTO repository = githubIntegrationService.getRepositoryRootDirectory(userId, repositoryName);
+      return ResponseEntity.ok(repository);
+    } catch (NoSuchElementException e) {
+      return ResponseEntity.status(404).build();
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().build();
     } catch (Exception e) {

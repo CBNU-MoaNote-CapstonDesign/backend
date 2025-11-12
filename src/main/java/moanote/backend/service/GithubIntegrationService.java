@@ -31,8 +31,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -393,6 +395,13 @@ public class GithubIntegrationService {
     }
   }
 
+  public FileDTO getRepositoryRootDirectory(UUID userId, String repositoryName) {
+    UserData user = userDataRepository.findById(userId)
+        .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+    File repositoryDirectory = resolveRepositoryDirectory(user, repositoryName);
+    return new FileDTO(repositoryDirectory, user);
+  }
+
   /**
    * <pre>
    *   로컬 작업 공간에 저장된 저장소에서 새로운 브랜치를 생성하고 커밋 및 푸시를 수행합니다.
@@ -403,15 +412,17 @@ public class GithubIntegrationService {
    * @param baseBranch     새 브랜치의 기준이 될 브랜치 이름
    * @param branchName     생성할 브랜치 이름
    * @param commitMessage  커밋 메시지
-   * @param filesToCommit  커밋에 포함될 파일 내용 (경로, 내용)
+   * @param fileIds        커밋에 포함될 파일 식별자 목록
    */
   public void createBranchAndCommit(UUID userId, String repositoryUrl, String baseBranch, String branchName,
-      String commitMessage, Map<String, String> filesToCommit) {
+      String commitMessage, List<UUID> fileIds) {
     Objects.requireNonNull(userId, "userId must not be null");
     Objects.requireNonNull(repositoryUrl, "repositoryUrl must not be null");
     Objects.requireNonNull(baseBranch, "baseBranch must not be null");
     Objects.requireNonNull(branchName, "branchName must not be null");
     Objects.requireNonNull(commitMessage, "commitMessage must not be null");
+
+    Map<String, String> filesToCommit = resolveFilesForCommit(userId, repositoryUrl, fileIds);
 
     GithubCredentials credentials = githubTokenService.findCredentials(userId)
         .orElse(GithubCredentials.anonymous());
@@ -433,27 +444,22 @@ public class GithubIntegrationService {
           .setStartPoint("origin/" + baseBranch)
           .call();
 
-      if (filesToCommit != null && !filesToCommit.isEmpty()) {
-        Path userWorkspace = workspaceRoot.resolve(userId.toString());
+      if (!filesToCommit.isEmpty()) {
         for (Map.Entry<String, String> entry : filesToCommit.entrySet()) {
-          Path workspaceRelative = Paths.get(entry.getKey());
-          if (workspaceRelative.isAbsolute()) {
-            throw new IllegalArgumentException("File paths must be relative to the user workspace");
+          Path repositoryRelative = Paths.get(entry.getKey());
+          if (repositoryRelative.isAbsolute()) {
+            throw new IllegalArgumentException("Repository relative paths must not be absolute");
           }
-          Path filePath = userWorkspace.resolve(workspaceRelative).normalize();
-          if (!filePath.startsWith(userWorkspace)) {
-            throw new IllegalArgumentException("File path escapes user workspace: " + entry.getKey());
-          }
+          Path filePath = repositoryPath.resolve(repositoryRelative).normalize();
           if (!filePath.startsWith(repositoryPath)) {
-            throw new IllegalArgumentException("File path must target the repository: " + entry.getKey());
+            throw new IllegalArgumentException("Resolved file path escapes repository: " + entry.getKey());
           }
           if (filePath.getParent() != null) {
             Files.createDirectories(filePath.getParent());
           }
           Files.writeString(filePath, entry.getValue(), StandardCharsets.UTF_8, StandardOpenOption.CREATE,
               StandardOpenOption.TRUNCATE_EXISTING);
-          String repositoryRelativePath = repositoryPath.relativize(filePath).toString().replace("\\", "/");
-          git.add().addFilepattern(repositoryRelativePath).call();
+          git.add().addFilepattern(entry.getKey()).call();
         }
       }
 
@@ -462,6 +468,84 @@ public class GithubIntegrationService {
     } catch (GitAPIException | IOException e) {
       throw new IllegalStateException("Failed to create branch and commit", e);
     }
+  }
+
+  private Map<String, String> resolveFilesForCommit(UUID userId, String repositoryUrl, List<UUID> fileIds) {
+    if (fileIds == null || fileIds.isEmpty()) {
+      return Map.of();
+    }
+
+    GithubImportedRepository importedRepository = githubImportedRepositoryRepository
+        .findByUser_IdAndRepositoryUrl(userId, repositoryUrl)
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Repository not imported for user: " + repositoryUrl));
+
+    File repositoryRoot = importedRepository.getRootDirectory();
+    Map<String, String> filesToCommit = new LinkedHashMap<>();
+
+    for (UUID fileId : fileIds) {
+      Objects.requireNonNull(fileId, "fileIds must not contain null elements");
+
+      File file = fileRepository.findFileById(fileId)
+          .orElseThrow(() -> new NoSuchElementException("File not found with id: " + fileId));
+
+      if (file.getType() != FileType.DOCUMENT) {
+        throw new IllegalArgumentException("Only document files can be committed: " + fileId);
+      }
+
+      if (!fileService.hasAnyPermission(fileId, userId)) {
+        throw new IllegalArgumentException("User does not have permission to commit file: " + fileId);
+      }
+
+      if (!isDescendantOfRepository(file, repositoryRoot)) {
+        throw new IllegalArgumentException("File does not belong to repository: " + fileId);
+      }
+
+      Note note = file.getNote();
+      if (note == null) {
+        throw new IllegalStateException("Document is missing note: " + fileId);
+      }
+
+      List<TextNoteSegment> segments = textNoteSegmentRepository.findAllByNote(note);
+      segments.sort(Comparator.comparing(TextNoteSegment::getId));
+
+      StringBuilder contentBuilder = new StringBuilder();
+      for (TextNoteSegment segment : segments) {
+        contentBuilder.append(segment.getContent());
+      }
+
+      String relativePath = buildRepositoryRelativePath(file, repositoryRoot);
+      filesToCommit.put(relativePath, contentBuilder.toString());
+    }
+
+    return filesToCommit;
+  }
+
+  private boolean isDescendantOfRepository(File candidate, File repositoryRoot) {
+    File current = candidate;
+    while (current != null) {
+      if (current.getId().equals(repositoryRoot.getId())) {
+        return true;
+      }
+      current = current.getDirectory();
+    }
+    return false;
+  }
+
+  private String buildRepositoryRelativePath(File file, File repositoryRoot) {
+    List<String> segments = new ArrayList<>();
+    File current = file;
+    while (current != null && !current.getId().equals(repositoryRoot.getId())) {
+      segments.add(current.getName());
+      current = current.getDirectory();
+    }
+
+    if (current == null) {
+      throw new IllegalArgumentException("File is not under repository root: " + file.getId());
+    }
+
+    Collections.reverse(segments);
+    return String.join("/", segments);
   }
 
   /**
